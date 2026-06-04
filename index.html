@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TonWave</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4ff;
+    --bg2: #e6ecff;
+    --card: #ffffff;
+    --card2: #f7f9ff;
+    --accent: #3b5bff;
+    --accent2: #00d4aa;
+    --accent3: #ff6b35;
+    --gold: #f5a623;
+    --text: #0d1340;
+    --text2: #4a5080;
+    --text3: #8892b8;
+    --border: #d0d8ff;
+    --shadow: 0 8px 32px rgba(59,91,255,0.10);
+    --shadow2: 0 2px 12px rgba(59,91,255,0.07);
+    --radius: 20px;
+    --radius2: 14px;
+    --font: 'Syne', sans-serif;
+    --font-fa: 'Vazirmatn', sans-serif;
+  }
+  [data-lang="fa"] { --font: 'Vazirmatn', sans-serif; direction: rtl; }
+  [data-lang="ar"] { --font: 'Vazirmatn', sans-serif; direction: rtl; }
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body { padding-bottom: 90px; }
+
+  /* ========= TOP BAR ========= */
+  .topbar {
+    position: sticky; top:0; z-index:100;
+    background: rgba(240,244,255,0.92);
+    backdrop-filter: blur(18px);
+    padding: 12px 18px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .topbar-logo {
+    font-size: 22px; font-weight: 800; letter-spacing:-1px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .topbar-logo span { color: var(--gold); -webkit-text-fill-color: var(--gold); }
+  .topbar-right { display:flex; gap:8px; align-items:center; }
+  .lang-btn {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 10px; padding: 5px 11px; font-size: 13px;
+    font-weight: 600; color: var(--accent); cursor: pointer;
+    display: flex; align-items: center; gap: 5px;
+    font-family: var(--font);
+  }
+
+  /* ========= USER CARD ========= */
+  .user-card {
+    margin: 16px 16px 0;
+    background: linear-gradient(135deg, #3b5bff 0%, #1a3af7 60%, #00d4aa 140%);
+    border-radius: 24px;
+    padding: 20px 20px 16px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(59,91,255,0.30);
+  }
+  .user-card::before {
+    content:''; position:absolute; top:-40px; right:-40px;
+    width:160px; height:160px; border-radius:50%;
+    background: rgba(255,255,255,0.07);
+  }
+  .user-card::after {
+    content:''; position:absolute; bottom:-30px; left:-20px;
+    width:120px; height:120px; border-radius:50%;
+    background: rgba(0,212,170,0.13);
+  }
+  .user-card-top { display:flex; align-items:center; gap:13px; margin-bottom:16px; }
+  .user-avatar {
+    width: 52px; height:52px; border-radius:50%;
+    border: 3px solid rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.2);
+    object-fit:cover;
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; font-weight:800; color:#fff;
+    flex-shrink:0; overflow:hidden;
+  }
+  .user-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .user-info { flex:1; }
+  .user-name { font-size:16px; font-weight:700; opacity:.97; }
+  .user-id { font-size:12px; opacity:.65; margin-top:2px; letter-spacing:.3px; }
+  .balance-label { font-size:12px; opacity:.7; letter-spacing:.5px; text-transform:uppercase; }
+  .balance-amount { font-size:38px; font-weight:800; letter-spacing:-2px; line-height:1.1; margin-top:2px; }
+  .balance-amount span { font-size:18px; font-weight:600; opacity:.8; margin-left:3px; }
+  .balance-sub { font-size:12px; opacity:.65; margin-top:3px; }
+  .card-btns { display:flex; gap:8px; margin-top:14px; }
+  .card-btn {
+    flex:1; background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.25);
+    border-radius:12px; padding:8px 6px;
+    color:#fff; font-size:12px; font-weight:600;
+    cursor:pointer; text-align:center;
+    font-family:var(--font);
+    transition: background 0.2s;
+  }
+  .card-btn:active { background: rgba(255,255,255,0.28); }
+  .card-btn.active { background: rgba(255,255,255,0.28); border-color:rgba(255,255,255,0.5); }
+
+  /* ========= SECTIONS ========= */
+  .section { display:none; }
+  .section.active { display:block; }
+  .section-pad { padding: 16px 16px 0; }
+
+  /* ========= SECTION HEADER ========= */
+  .sec-header {
+    font-size:18px; font-weight:800; color:var(--text);
+    margin-bottom:14px; display:flex; align-items:center; gap:8px;
+  }
+  .sec-dot { width:10px; height:10px; border-radius:50%; background:var(--accent2); display:inline-block; }
+
+  /* ========= ADS SECTION ========= */
+  .ads-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+  .stat-card {
+    background: var(--card); border-radius: var(--radius2);
+    padding: 14px 16px; border: 1.5px solid var(--border);
+    box-shadow: var(--shadow2);
+  }
+  .stat-card-label { font-size:11px; color:var(--text3); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+  .stat-card-value { font-size:22px; font-weight:800; color:var(--text); margin-top:4px; }
+  .stat-card-value.accent { color: var(--accent2); }
+
+  .ad-watch-card {
+    background: var(--card); border-radius: 22px;
+    border: 2px solid var(--accent);
+    padding: 20px; box-shadow: var(--shadow);
+    margin-bottom:14px;
+    position:relative; overflow:hidden;
+  }
+  .ad-watch-card::before {
+    content:''; position:absolute; top:0; right:0;
+    width:100px; height:100px;
+    background: radial-gradient(circle, rgba(59,91,255,0.08) 0%, transparent 70%);
+  }
+  .ad-watch-top { display:flex; align-items:center; gap:14px; }
+  .ad-play-btn {
+    width:58px; height:58px; border-radius:18px;
+    background: linear-gradient(135deg, var(--accent), #6b8aff);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+    box-shadow: 0 4px 16px rgba(59,91,255,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .ad-play-btn:active { transform:scale(0.93); }
+  .ad-play-btn svg { width:26px; height:26px; fill:#fff; }
+  .ad-info { flex:1; }
+  .ad-title { font-size:16px; font-weight:700; color:var(--text); }
+  .ad-desc { font-size:13px; color:var(--text2); margin-top:2px; }
+  .ad-earn-badge {
+    background: linear-gradient(135deg, var(--accent2), #00b894);
+    color:#fff; font-size:15px; font-weight:800;
+    padding: 5px 13px; border-radius:10px;
+  }
+  .ad-progress-wrap { margin-top:14px; }
+  .ad-progress-bar {
+    background: var(--bg2); border-radius:8px; height:7px; overflow:hidden; margin-top:5px;
+  }
+  .ad-progress-fill {
+    height:100%; border-radius:8px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.5s ease;
+  }
+  .ad-progress-text { display:flex; justify-content:space-between; font-size:12px; color:var(--text3); margin-top:4px; }
+
+  /* ========= TASKS ========= */
+  .task-item {
+    background: var(--card); border-radius: var(--radius2);
+    border: 1.5px solid var(--border);
+    padding: 14px 16px; margin-bottom:10px;
+    display:flex; align-items:center; gap:13px;
+    box-shadow: var(--shadow2);
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative; overflow:hidden;
+  }
+  .task-item.done { border-color: var(--accent2); background: #f0fdf8; }
+  .task-icon {
+    width:44px; height:44px; border-radius:13px;
+    background: var(--bg2); display:flex; align-items:center;
+    justify-content:center; font-size:21px; flex-shrink:0;
+  }
+  .task-item.done .task-icon { background: rgba(0,212,170,0.12); }
+  .task-info { flex:1; }
+  .task-name { font-size:14px; font-weight:700; color:var(--text); }
+  .task-reward { font-size:13px; color:var(--accent2); font-weight:600; margin-top:2px; }
+  .task-btn {
+    padding: 7px 15px; border-radius:10px; font-size:13px; font-weight:700;
+    cursor:pointer; border:none; font-family:var(--font);
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .task-btn:active { transform:scale(0.94); }
+  .task-btn.go { background: linear-gradient(135deg, var(--accent), #6b8aff); color:#fff; }
+  .task-btn.done-btn { background: rgba(0,212,170,0.13); color:var(--accent2); cursor:default; }
+
+  /* ========= INVITE ========= */
+  .invite-hero {
+    background: linear-gradient(135deg, #fffbe6 0%, #fff8d6 100%);
+    border: 2px solid var(--gold);
+    border-radius: 22px; padding: 20px; margin-bottom:14px;
+    text-align:center;
+  }
+  .invite-hero-icon { font-size:42px; margin-bottom:8px; }
+  .invite-amount { font-size:34px; font-weight:800; color:var(--gold); letter-spacing:-1px; }
+  .invite-amount span { font-size:16px; font-weight:600; }
+  .invite-desc { font-size:14px; color:var(--text2); margin-top:6px; }
+  .invite-link-box {
+    background: var(--card); border-radius:14px;
+    border: 1.5px solid var(--border);
+    padding: 12px 14px; margin-bottom:12px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .invite-link-text {
+    flex:1; font-size:12px; color:var(--text2);
+    word-break:break-all; font-family:monospace;
+  }
+  .copy-btn {
+    background: var(--accent); color:#fff; border:none;
+    border-radius:9px; padding:7px 13px; font-size:12px;
+    font-weight:700; cursor:pointer; flex-shrink:0;
+    font-family:var(--font);
+    transition: opacity 0.15s;
+  }
+  .copy-btn:active { opacity:.8; }
+  .share-btn {
+    width:100%; background: linear-gradient(135deg, var(--gold), #ff9f43);
+    border:none; border-radius:14px; padding:14px;
+    color:#fff; font-size:15px; font-weight:800; cursor:pointer;
+    font-family:var(--font); margin-bottom:14px;
+    box-shadow: 0 4px 16px rgba(245,166,35,0.3);
+    transition: transform 0.15s;
+  }
+  .share-btn:active { transform:scale(0.97); }
+  .invite-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .invite-stat-card {
+    background: var(--card); border-radius:14px;
+    border: 1.5px solid var(--border);
+    padding:14px 16px; text-align:center;
+    box-shadow: var(--shadow2);
+  }
+  .invite-stat-label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.4px; font-weight:600; }
+  .invite-stat-value { font-size:24px; font-weight:800; color:var(--accent); margin-top:4px; }
+  .invite-stat-value.gold { color:var(--gold); }
+
+  /* ========= WITHDRAW ========= */
+  .withdraw-min-notice {
+    background: #fff8e1; border: 1.5px solid var(--gold);
+    border-radius:12px; padding:11px 14px; margin-bottom:14px;
+    font-size:13px; color:#7a5e00; font-weight:600;
+    display:flex; align-items:center; gap:8px;
+  }
+  .withdraw-form {
+    background: var(--card); border-radius: 22px;
+    border: 1.5px solid var(--border); padding:20px;
+    box-shadow: var(--shadow); margin-bottom:14px;
+  }
+  .w-tabs { display:flex; gap:8px; margin-bottom:18px; }
+  .w-tab {
+    flex:1; padding:10px 6px; border-radius:12px; border:2px solid var(--border);
+    background:var(--bg2); font-size:13px; font-weight:700; cursor:pointer;
+    text-align:center; color:var(--text2); font-family:var(--font);
+    transition: all 0.2s;
+  }
+  .w-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .form-label { font-size:12px; color:var(--text3); font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin-bottom:6px; }
+  .form-input {
+    width:100%; background:var(--bg2); border:1.5px solid var(--border);
+    border-radius:12px; padding:12px 14px; font-size:15px;
+    color:var(--text); font-family:var(--font); margin-bottom:14px;
+    outline:none; transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color:var(--accent); }
+  .form-hint { font-size:12px; color:var(--text3); margin-top:-10px; margin-bottom:14px; }
+  .submit-btn {
+    width:100%; background: linear-gradient(135deg, var(--accent), #6b8aff);
+    border:none; border-radius:14px; padding:15px;
+    color:#fff; font-size:16px; font-weight:800; cursor:pointer;
+    font-family:var(--font);
+    box-shadow: 0 4px 18px rgba(59,91,255,0.3);
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .submit-btn:active { transform:scale(0.97); }
+  .submit-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* Withdraw History */
+  .history-section { margin-top:8px; }
+  .history-item {
+    background: var(--card); border-radius:14px;
+    border: 1.5px solid var(--border);
+    padding:14px 16px; margin-bottom:10px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow: var(--shadow2);
+  }
+  .history-item-left { }
+  .history-amount { font-size:18px; font-weight:800; color:var(--text); }
+  .history-date { font-size:12px; color:var(--text3); margin-top:3px; }
+  .history-address { font-size:11px; color:var(--text2); margin-top:2px; font-family:monospace; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .status-badge {
+    padding:5px 12px; border-radius:8px; font-size:12px; font-weight:700;
+    white-space:nowrap;
+  }
+  .status-badge.completed { background:rgba(0,212,170,0.13); color:var(--accent2); }
+  .status-badge.pending { background:rgba(245,166,35,0.13); color:var(--gold); }
+
+  /* ========= LANGUAGE MODAL ========= */
+  .modal-overlay {
+    display:none; position:fixed; inset:0; z-index:999;
+    background: rgba(13,19,64,0.55); backdrop-filter:blur(6px);
+    align-items:flex-end; justify-content:center;
+  }
+  .modal-overlay.open { display:flex; }
+  .modal-box {
+    background:var(--card); border-radius:28px 28px 0 0;
+    width:100%; padding:24px 20px 36px;
+    box-shadow:0 -8px 40px rgba(59,91,255,0.15);
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal-title { font-size:20px; font-weight:800; text-align:center; margin-bottom:18px; color:var(--text); }
+  .lang-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .lang-item {
+    background:var(--bg2); border:2px solid var(--border);
+    border-radius:14px; padding:12px 14px; cursor:pointer;
+    display:flex; align-items:center; gap:10px;
+    font-size:14px; font-weight:600; color:var(--text);
+    transition: all 0.2s;
+  }
+  .lang-item.selected { border-color:var(--accent); background:rgba(59,91,255,0.07); color:var(--accent); }
+  .lang-flag { font-size:22px; }
+
+  /* ========= AD MODAL ========= */
+  .ad-modal {
+    display:none; position:fixed; inset:0; z-index:998;
+    background:rgba(13,19,64,0.7); backdrop-filter:blur(8px);
+    align-items:center; justify-content:center;
+  }
+  .ad-modal.open { display:flex; }
+  .ad-modal-box {
+    background: var(--card); border-radius:24px;
+    width:calc(100% - 32px); max-width:380px; padding:28px 22px;
+    text-align:center; box-shadow: 0 16px 60px rgba(59,91,255,0.2);
+    animation: popIn 0.25s ease;
+  }
+  @keyframes popIn { from{transform:scale(0.85);opacity:0} to{transform:scale(1);opacity:1} }
+  .ad-countdown { font-size:52px; font-weight:800; color:var(--accent); line-height:1; }
+  .ad-watching-title { font-size:18px; font-weight:700; color:var(--text); margin-top:8px; }
+  .ad-watching-sub { font-size:13px; color:var(--text2); margin-top:6px; }
+  .ad-modal-progress { background:var(--bg2); border-radius:8px; height:8px; overflow:hidden; margin:16px 0 0; }
+  .ad-modal-progress-fill { height:100%; background:linear-gradient(90deg, var(--accent), var(--accent2)); transition:width 1s linear; border-radius:8px; }
+
+  /* ========= TOAST ========= */
+  .toast {
+    position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--text); color:#fff; padding:11px 22px;
+    border-radius:12px; font-size:14px; font-weight:600;
+    opacity:0; transition: all 0.3s; z-index:9999; white-space:nowrap;
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ========= BOTTOM NAV ========= */
+  .bottom-nav {
+    position:fixed; bottom:0; left:0; right:0; z-index:200;
+    background: rgba(255,255,255,0.95); backdrop-filter:blur(20px);
+    border-top: 1.5px solid var(--border);
+    display:flex; height:70px;
+    box-shadow: 0 -4px 24px rgba(59,91,255,0.10);
+  }
+  .nav-item {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; cursor:pointer; gap:4px;
+    transition: color 0.2s;
+  }
+  .nav-item .nav-icon { font-size:22px; transition: transform 0.2s; }
+  .nav-item .nav-label { font-size:10px; font-weight:700; color:var(--text3); letter-spacing:.3px; }
+  .nav-item.active .nav-icon { transform: scale(1.15); }
+  .nav-item.active .nav-label { color:var(--accent); }
+
+  /* ========= ANIMATIONS ========= */
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+  .pulse { animation: pulse 1.5s infinite; }
+
+  @keyframes wave {
+    0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.4)}
+  }
+  .wave-bar { display:inline-block; width:4px; height:14px; background:var(--accent2); border-radius:2px; margin:0 1px; }
+  .wave-bar:nth-child(1){animation:wave 1s ease-in-out 0s infinite}
+  .wave-bar:nth-child(2){animation:wave 1s ease-in-out 0.15s infinite}
+  .wave-bar:nth-child(3){animation:wave 1s ease-in-out 0.3s infinite}
+  .wave-bar:nth-child(4){animation:wave 1s ease-in-out 0.45s infinite}
+
+  /* RTL adjustments */
+  [data-lang="fa"] .invite-link-text,
+  [data-lang="ar"] .invite-link-text { direction:ltr; text-align:right; }
+
+  .empty-history { text-align:center; padding:30px 0; color:var(--text3); font-size:14px; }
+
+  /* Withdraw success */
+  .withdraw-success {
+    background:linear-gradient(135deg,#f0fdf8,#e6fff7);
+    border:2px solid var(--accent2); border-radius:18px;
+    padding:20px; text-align:center; display:none; margin-bottom:14px;
+  }
+  .withdraw-success.show { display:block; }
+  .ws-icon { font-size:42px; margin-bottom:8px; }
+  .ws-title { font-size:18px; font-weight:800; color:var(--accent2); }
+  .ws-detail { font-size:13px; color:var(--text2); margin-top:6px; }
+</style>
+</head>
+<body data-lang="en">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">Ton<span>Wave</span></div>
+  <div class="topbar-right">
+    <button class="lang-btn" onclick="openLangModal()">
+      <span id="langFlag">🇬🇧</span>
+      <span id="langCode">EN</span>
+    </button>
+  </div>
+</div>
+
+<!-- USER CARD -->
+<div class="user-card" id="userCard">
+  <div class="user-card-top">
+    <div class="user-avatar" id="userAvatar">👤</div>
+    <div class="user-info">
+      <div class="user-name" id="userName" data-i18n="loading">Loading...</div>
+      <div class="user-id" id="userId">ID: —</div>
+    </div>
+  </div>
+  <div class="balance-label" data-i18n="totalBalance">TOTAL BALANCE</div>
+  <div class="balance-amount" id="balanceAmount">0.00 <span>TON</span></div>
+  <div class="balance-sub" data-i18n="availableToWithdraw">Available to withdraw</div>
+  <div class="card-btns">
+    <button class="card-btn active" onclick="switchTab('ads')" id="btnAds" data-i18n="ads">▶ Ads</button>
+    <button class="card-btn" onclick="switchTab('tasks')" id="btnTasks" data-i18n="tasks">✓ Tasks</button>
+    <button class="card-btn" onclick="switchTab('invite')" id="btnInvite" data-i18n="invite">👥 Invite</button>
+    <button class="card-btn" onclick="switchTab('withdraw')" id="btnWithdraw" data-i18n="withdraw">💸 Withdraw</button>
+  </div>
+</div>
+
+<!-- ======== ADS SECTION ======== -->
+<div id="sec-ads" class="section active section-pad">
+  <div class="sec-header"><span class="sec-dot"></span><span data-i18n="watchAndEarn">Watch & Earn</span> <div style="margin-left:auto;display:flex;gap:3px"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div></div>
+  <div class="ads-stats">
+    <div class="stat-card">
+      <div class="stat-card-label" data-i18n="totalWatched">Total Watched</div>
+      <div class="stat-card-value" id="totalWatched">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-label" data-i18n="totalEarned">Total Earned</div>
+      <div class="stat-card-value accent" id="totalEarned">0.00 TON</div>
+    </div>
+  </div>
+  <div class="ad-watch-card" id="adWatchCard">
+    <div class="ad-watch-top">
+      <div class="ad-play-btn" onclick="watchAd()" id="adPlayBtn">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </div>
+      <div class="ad-info">
+        <div class="ad-title" data-i18n="watchAd">Watch Ad</div>
+        <div class="ad-desc" data-i18n="completeVideo">Complete video to earn instantly</div>
+      </div>
+      <div class="ad-earn-badge">+0.06 TON</div>
+    </div>
+    <div class="ad-progress-wrap">
+      <div class="ad-progress-bar">
+        <div class="ad-progress-fill" id="adProgressFill" style="width:0%"></div>
+      </div>
+      <div class="ad-progress-text">
+        <span id="adStatus" data-i18n="readyToEarn">Ready to earn</span>
+        <span id="adCounter">0 / 20 <span data-i18n="today">today</span></span>
+      </div>
+    </div>
+  </div>
+  <div id="adsDoneMsg" style="display:none; background:var(--card); border-radius:16px; border:2px solid var(--accent2); padding:18px; text-align:center; margin-bottom:10px;">
+    <div style="font-size:36px">🎉</div>
+    <div style="font-size:16px;font-weight:800;color:var(--accent2);margin-top:8px;" data-i18n="allAdsDone">All ads done for today!</div>
+    <div style="font-size:13px;color:var(--text2);margin-top:4px;" data-i18n="comeBackTomorrow">Come back tomorrow for more TON</div>
+  </div>
+</div>
+
+<!-- ======== TASKS SECTION ======== -->
+<div id="sec-tasks" class="section section-pad">
+  <div class="sec-header"><span class="sec-dot"></span><span data-i18n="completeTasksEarn">Complete Tasks & Earn</span></div>
+  <div id="tasksList"></div>
+</div>
+
+<!-- ======== INVITE SECTION ======== -->
+<div id="sec-invite" class="section section-pad">
+  <div class="sec-header"><span class="sec-dot"></span><span data-i18n="inviteAndEarn">Invite & Earn</span></div>
+  <div class="invite-hero">
+    <div class="invite-hero-icon">🌊</div>
+    <div class="invite-amount">0.40 <span>TON</span></div>
+    <div class="invite-desc" data-i18n="inviteDesc">Share your unique link and earn 0.40 TON per friend who joins!</div>
+  </div>
+  <div style="font-size:12px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;" data-i18n="yourInviteLink">YOUR INVITE LINK</div>
+  <div class="invite-link-box">
+    <div class="invite-link-text" id="inviteLinkText">https://t.me/TonWave_1Bot?startapp=...</div>
+    <button class="copy-btn" onclick="copyInviteLink()" data-i18n="copy">Copy</button>
+  </div>
+  <button class="share-btn" onclick="shareInvite()">🚀 <span data-i18n="shareWithFriends">Share with Friends</span></button>
+  <div class="invite-stats">
+    <div class="invite-stat-card">
+      <div class="invite-stat-label" data-i18n="friendsInvited">Friends Invited</div>
+      <div class="invite-stat-value" id="friendsCount">0</div>
+    </div>
+    <div class="invite-stat-card">
+      <div class="invite-stat-label" data-i18n="earnedFromInvites">Earned from Invites</div>
+      <div class="invite-stat-value gold" id="inviteEarned">0.00 TON</div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== WITHDRAW SECTION ======== -->
+<div id="sec-withdraw" class="section section-pad">
+  <div class="sec-header"><span class="sec-dot"></span><span data-i18n="withdrawFunds">Withdraw Funds</span></div>
+  <div class="withdraw-min-notice">⚠️ <span><span data-i18n="minWithdraw">Minimum</span> 5.70 TON <span data-i18n="requiredToWithdraw">required to withdraw</span></span></div>
+  <div class="withdraw-form">
+    <div class="w-tabs">
+      <button class="w-tab active" data-tab="ton" onclick="setWithdrawTab('ton')">💎 TON</button>
+      <button class="w-tab" data-tab="usdt" onclick="setWithdrawTab('usdt')">💵 USDT</button>
+      <button class="w-tab" data-tab="mobile" onclick="setWithdrawTab('mobile')">📱 <span data-i18n="mobile">Mobile</span></button>
+    </div>
+    <div class="form-label" data-i18n="amount">AMOUNT</div>
+    <input type="number" class="form-input" id="withdrawAmount" placeholder="e.g. 10.00" step="0.01">
+    <div class="form-hint" id="withdrawHint">Available: <span id="availableBal">0.00</span> TON · Min 5.70 TON</div>
+    <div class="form-label" data-i18n="walletAddress">WALLET ADDRESS</div>
+    <input type="text" class="form-input" id="withdrawAddress" placeholder="TXyz...abc">
+    <button class="submit-btn" onclick="submitWithdraw()" id="submitWithdrawBtn">🚀 <span data-i18n="submitWithdrawal">Submit Withdrawal Request</span></button>
+  </div>
+
+  <div class="withdraw-success" id="withdrawSuccess">
+    <div class="ws-icon">⏳</div>
+    <div class="ws-title" data-i18n="withdrawProcessing">Processing...</div>
+    <div class="ws-detail" id="withdrawSuccessDetail"></div>
+  </div>
+
+  <div class="sec-header" style="margin-top:8px;"><span class="sec-dot" style="background:var(--gold)"></span><span data-i18n="withdrawalHistory">Withdrawal History</span></div>
+  <div id="historyList"></div>
+</div>
+
+<!-- ======== LANGUAGE MODAL ======== -->
+<div class="modal-overlay" id="langModal" onclick="closeLangModal(event)">
+  <div class="modal-box">
+    <div class="modal-title" data-i18n="chooseLanguage">Choose Language</div>
+    <div class="lang-grid" id="langGrid"></div>
+  </div>
+</div>
+
+<!-- ======== AD MODAL ======== -->
+<div class="ad-modal" id="adModal">
+  <div class="ad-modal-box">
+    <div class="ad-countdown" id="adCountdown">5</div>
+    <div class="ad-watching-title" data-i18n="watchingAd">Watching Ad...</div>
+    <div class="ad-watching-sub" data-i18n="dontClose">Don't close — earn 0.06 TON on completion</div>
+    <div class="ad-modal-progress">
+      <div class="ad-modal-progress-fill" id="adModalFill" style="width:0%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchTab('ads')" id="nav-ads">
+    <div class="nav-icon">▶️</div>
+    <div class="nav-label" data-i18n="ads">ADS</div>
+  </div>
+  <div class="nav-item" onclick="switchTab('tasks')" id="nav-tasks">
+    <div class="nav-icon">✅</div>
+    <div class="nav-label" data-i18n="tasks">TASKS</div>
+  </div>
+  <div class="nav-item" onclick="switchTab('invite')" id="nav-invite">
+    <div class="nav-icon">👥</div>
+    <div class="nav-label" data-i18n="invite">INVITE</div>
+  </div>
+  <div class="nav-item" onclick="switchTab('withdraw')" id="nav-withdraw">
+    <div class="nav-icon">💸</div>
+    <div class="nav-label" data-i18n="withdraw">WITHDRAW</div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  TRANSLATIONS
+// ============================================================
+const TRANSLATIONS = {
+  en: {
+    loading:"Loading...", totalBalance:"TOTAL BALANCE", availableToWithdraw:"Available to withdraw",
+    ads:"Ads", tasks:"Tasks", invite:"Invite", withdraw:"Withdraw",
+    watchAndEarn:"Watch & Earn", totalWatched:"Total Watched", totalEarned:"Total Earned",
+    watchAd:"Watch Ad", completeVideo:"Complete video to earn instantly",
+    readyToEarn:"Ready to earn", today:"today",
+    allAdsDone:"All ads done for today!", comeBackTomorrow:"Come back tomorrow for more TON",
+    completeTasksEarn:"Complete Tasks & Earn",
+    inviteAndEarn:"Invite & Earn",
+    inviteDesc:"Share your unique link and earn 0.40 TON per friend who joins!",
+    yourInviteLink:"YOUR INVITE LINK", copy:"Copy", shareWithFriends:"Share with Friends",
+    friendsInvited:"Friends Invited", earnedFromInvites:"Earned from Invites",
+    withdrawFunds:"Withdraw Funds", minWithdraw:"Minimum", requiredToWithdraw:"required to withdraw",
+    amount:"AMOUNT", walletAddress:"WALLET ADDRESS",
+    submitWithdrawal:"Submit Withdrawal Request",
+    withdrawProcessing:"Processing...",
+    withdrawalHistory:"Withdrawal History",
+    chooseLanguage:"Choose Language",
+    watchingAd:"Watching Ad...", dontClose:"Don't close — earn 0.06 TON on completion",
+    mobile:"Mobile", taskGo:"Go →", taskDone:"✓ Done",
+    completed:"Completed", pending:"Pending",
+    copied:"Copied!", withdrawSubmitted:"Withdrawal request submitted!",
+    insufficientBalance:"Insufficient balance!", enterAmount:"Please enter amount",
+    enterAddress:"Please enter wallet address",
+    minAmount:"Minimum withdrawal is 5.70 TON",
+  },
+  fa: {
+    loading:"در حال بارگذاری...", totalBalance:"موجودی کل", availableToWithدraw:"قابل برداشت",
+    availableToWithdraw:"قابل برداشت",
+    ads:"تبلیغات", tasks:"تسک‌ها", invite:"دعوت", withdraw:"برداشت",
+    watchAndEarn:"تماشا کن و کسب کن", totalWatched:"کل تماشا شده", totalEarned:"کل درآمد",
+    watchAd:"تماشای تبلیغ", completeVideo:"ویدیو را کامل تماشا کن و فوری کسب کن",
+    readyToEarn:"آماده برای کسب درآمد", today:"امروز",
+    allAdsDone:"تمام تبلیغات امروز تمام شد!", comeBackTomorrow:"فردا برگرد برای TON بیشتر",
+    completeTasksEarn:"تسک‌ها را انجام بده و کسب کن",
+    inviteAndEarn:"دعوت کن و کسب کن",
+    inviteDesc:"لینک یکتای خود را به اشتراک بگذار و برای هر دوستی که می‌پیوندد 0.40 TON کسب کن!",
+    yourInviteLink:"لینک دعوت شما", copy:"کپی", shareWithFriends:"اشتراک‌گذاری با دوستان",
+    friendsInvited:"دوستان دعوت شده", earnedFromInvites:"درآمد از دعوت‌ها",
+    withdrawFunds:"برداشت وجه", minWithdraw:"حداقل", requiredToWithdraw:"برای برداشت لازم است",
+    amount:"مقدار", walletAddress:"آدرس کیف پول",
+    submitWithdrawal:"ارسال درخواست برداشت",
+    withdrawProcessing:"در حال پردازش...",
+    withdrawalHistory:"تاریخچه برداشت",
+    chooseLanguage:"انتخاب زبان",
+    watchingAd:"در حال تماشای تبلیغ...", dontClose:"نبند — با تکمیل 0.06 TON دریافت می‌کنی",
+    mobile:"موبایل", taskGo:"برو →", taskDone:"✓ انجام شد",
+    completed:"تکمیل شد", pending:"در انتظار",
+    copied:"کپی شد!", withdrawSubmitted:"درخواست برداشت ارسال شد!",
+    insufficientBalance:"موجودی کافی نیست!", enterAmount:"لطفاً مقدار را وارد کنید",
+    enterAddress:"لطفاً آدرس کیف پول را وارد کنید",
+    minAmount:"حداقل برداشت 5.70 TON است",
+  },
+  ar: {
+    loading:"جار التحميل...", totalBalance:"الرصيد الكلي", availableToWithdraw:"متاح للسحب",
+    ads:"الإعلانات", tasks:"المهام", invite:"دعوة", withdraw:"سحب",
+    watchAndEarn:"شاهد واكسب", totalWatched:"إجمالي المشاهدات", totalEarned:"إجمالي المكسوب",
+    watchAd:"مشاهدة إعلان", completeVideo:"أكمل الفيديو لتربح فوراً",
+    readyToEarn:"جاهز للربح", today:"اليوم",
+    allAdsDone:"انتهت إعلانات اليوم!", comeBackTomorrow:"عد غداً للمزيد من TON",
+    completeTasksEarn:"أكمل المهام واكسب",
+    inviteAndEarn:"ادعُ واكسب",
+    inviteDesc:"شارك رابطك الفريد واكسب 0.40 TON لكل صديق ينضم!",
+    yourInviteLink:"رابط الدعوة الخاص بك", copy:"نسخ", shareWithFriends:"مشاركة مع الأصدقاء",
+    friendsInvited:"الأصدقاء المدعوون", earnedFromInvites:"المكسوب من الدعوات",
+    withdrawFunds:"سحب الأموال", minWithdraw:"الحد الأدنى", requiredToWithdraw:"مطلوب للسحب",
+    amount:"المبلغ", walletAddress:"عنوان المحفظة",
+    submitWithdrawal:"إرسال طلب السحب",
+    withdrawProcessing:"جار المعالجة...",
+    withdrawalHistory:"سجل السحوبات",
+    chooseLanguage:"اختر اللغة",
+    watchingAd:"مشاهدة الإعلان...", dontClose:"لا تغلق — اكسب 0.06 TON عند الاكتمال",
+    mobile:"موبايل", taskGo:"اذهب →", taskDone:"✓ تم",
+    completed:"مكتمل", pending:"معلق",
+    copied:"تم النسخ!", withdrawSubmitted:"تم إرسال طلب السحب!",
+    insufficientBalance:"رصيد غير كافٍ!", enterAmount:"الرجاء إدخال المبلغ",
+    enterAddress:"الرجاء إدخال عنوان المحفظة",
+    minAmount:"الحد الأدنى للسحب هو 5.70 TON",
+  },
+  ru: {
+    loading:"Загрузка...", totalBalance:"ОБЩИЙ БАЛАНС", availableToWithdraw:"Доступно для вывода",
+    ads:"Реклама", tasks:"Задания", invite:"Пригласить", withdraw:"Вывод",
+    watchAndEarn:"Смотри и зарабатывай", totalWatched:"Всего просмотрено", totalEarned:"Всего заработано",
+    watchAd:"Смотреть рекламу", completeVideo:"Досмотри видео и заработай мгновенно",
+    readyToEarn:"Готово к заработку", today:"сегодня",
+    allAdsDone:"Реклама на сегодня закончилась!", comeBackTomorrow:"Возвращайся завтра за TON",
+    completeTasksEarn:"Выполняй задания и зарабатывай",
+    inviteAndEarn:"Приглашай и зарабатывай",
+    inviteDesc:"Поделись уникальной ссылкой и зарабатывай 0.40 TON за каждого друга!",
+    yourInviteLink:"ТВОЯ ССЫЛКА", copy:"Копировать", shareWithFriends:"Поделиться с друзьями",
+    friendsInvited:"Приглашено друзей", earnedFromInvites:"Заработано с приглашений",
+    withdrawFunds:"Вывод средств", minWithdraw:"Минимум", requiredToWithdraw:"необходимо для вывода",
+    amount:"СУММА", walletAddress:"АДРЕС КОШЕЛЬКА",
+    submitWithdrawal:"Отправить запрос на вывод",
+    withdrawProcessing:"Обработка...",
+    withdrawalHistory:"История выводов",
+    chooseLanguage:"Выберите язык",
+    watchingAd:"Просмотр рекламы...", dontClose:"Не закрывай — заработай 0.06 TON",
+    mobile:"Мобильный", taskGo:"Перейти →", taskDone:"✓ Готово",
+    completed:"Выполнено", pending:"Ожидание",
+    copied:"Скопировано!", withdrawSubmitted:"Запрос на вывод отправлен!",
+    insufficientBalance:"Недостаточно средств!", enterAmount:"Введите сумму",
+    enterAddress:"Введите адрес кошелька",
+    minAmount:"Минимальный вывод 5.70 TON",
+  },
+  tr: {
+    loading:"Yükleniyor...", totalBalance:"TOPLAM BAKİYE", availableToWithdraw:"Çekilebilir bakiye",
+    ads:"Reklamlar", tasks:"Görevler", invite:"Davet", withdraw:"Çekim",
+    watchAndEarn:"İzle ve Kazan", totalWatched:"Toplam İzlenen", totalEarned:"Toplam Kazanılan",
+    watchAd:"Reklam İzle", completeVideo:"Videoyu tamamla ve anında kazan",
+    readyToEarn:"Kazanmaya hazır", today:"bugün",
+    allAdsDone:"Bugünkü reklamlar bitti!", comeBackTomorrow:"Daha fazla TON için yarın gel",
+    completeTasksEarn:"Görevleri Tamamla ve Kazan",
+    inviteAndEarn:"Davet Et ve Kazan",
+    inviteDesc:"Benzersiz bağlantını paylaş, katılan her arkadaş için 0.40 TON kazan!",
+    yourInviteLink:"DAVET BAĞLANTINIZ", copy:"Kopyala", shareWithFriends:"Arkadaşlarla Paylaş",
+    friendsInvited:"Davet Edilen Arkadaşlar", earnedFromInvites:"Davetlerden Kazanılan",
+    withdrawFunds:"Para Çekme", minWithdraw:"Minimum", requiredToWithdraw:"çekim için gerekli",
+    amount:"MİKTAR", walletAddress:"CÜZDAN ADRESİ",
+    submitWithdrawal:"Çekim Talebi Gönder",
+    withdrawProcessing:"İşleniyor...",
+    withdrawalHistory:"Çekim Geçmişi",
+    chooseLanguage:"Dil Seçin",
+    watchingAd:"Reklam İzleniyor...", dontClose:"Kapatma — 0.06 TON kazan",
+    mobile:"Mobil", taskGo:"Git →", taskDone:"✓ Tamam",
+    completed:"Tamamlandı", pending:"Beklemede",
+    copied:"Kopyalandı!", withdrawSubmitted:"Çekim talebi gönderildi!",
+    insufficientBalance:"Yetersiz bakiye!", enterAmount:"Lütfen miktar girin",
+    enterAddress:"Lütfen cüzdan adresi girin",
+    minAmount:"Minimum çekim 5.70 TON",
+  },
+  hi: {
+    loading:"लोड हो रहा है...", totalBalance:"कुल शेष", availableToWithdraw:"निकासी योग्य",
+    ads:"विज्ञापन", tasks:"कार्य", invite:"आमंत्रण", withdraw:"निकासी",
+    watchAndEarn:"देखो और कमाओ", totalWatched:"कुल देखा", totalEarned:"कुल कमाई",
+    watchAd:"विज्ञापन देखें", completeVideo:"तुरंत कमाने के लिए वीडियो पूरा करें",
+    readyToEarn:"कमाने के लिए तैयार", today:"आज",
+    allAdsDone:"आज के सभी विज्ञापन हो गए!", comeBackTomorrow:"अधिक TON के लिए कल आएं",
+    completeTasksEarn:"कार्य पूरे करो और कमाओ",
+    inviteAndEarn:"आमंत्रित करो और कमाओ",
+    inviteDesc:"अपना लिंक शेयर करें और हर मित्र के लिए 0.40 TON कमाएं!",
+    yourInviteLink:"आपका आमंत्रण लिंक", copy:"कॉपी", shareWithFriends:"मित्रों के साथ शेयर करें",
+    friendsInvited:"आमंत्रित मित्र", earnedFromInvites:"आमंत्रणों से कमाई",
+    withdrawFunds:"निकासी", minWithdraw:"न्यूनतम", requiredToWithdraw:"निकासी के लिए आवश्यक",
+    amount:"राशि", walletAddress:"वॉलेट पता",
+    submitWithdrawal:"निकासी अनुरोध जमा करें",
+    withdrawProcessing:"प्रोसेसिंग...",
+    withdrawalHistory:"निकासी इतिहास",
+    chooseLanguage:"भाषा चुनें",
+    watchingAd:"विज्ञापन देख रहे हैं...", dontClose:"बंद न करें — 0.06 TON कमाएं",
+    mobile:"मोबाइल", taskGo:"जाएं →", taskDone:"✓ हो गया",
+    completed:"पूर्ण", pending:"प्रतीक्षारत",
+    copied:"कॉपी हो गया!", withdrawSubmitted:"निकासी अनुरोध जमा हो गया!",
+    insufficientBalance:"अपर्याप्त शेष!", enterAmount:"कृपया राशि दर्ज करें",
+    enterAddress:"कृपया वॉलेट पता दर्ज करें",
+    minAmount:"न्यूनतम निकासी 5.70 TON है",
+  },
+  zh: {
+    loading:"加载中...", totalBalance:"总余额", availableToWithdraw:"可提取余额",
+    ads:"广告", tasks:"任务", invite:"邀请", withdraw:"提现",
+    watchAndEarn:"看广告赚钱", totalWatched:"总观看数", totalEarned:"总收益",
+    watchAd:"观看广告", completeVideo:"完成视频即时获得奖励",
+    readyToEarn:"准备赚钱", today:"今天",
+    allAdsDone:"今日广告已看完！", comeBackTomorrow:"明天回来获得更多TON",
+    completeTasksEarn:"完成任务赚钱",
+    inviteAndEarn:"邀请赚钱",
+    inviteDesc:"分享您的专属链接，每邀请一位朋友获得0.40 TON！",
+    yourInviteLink:"您的邀请链接", copy:"复制", shareWithFriends:"与朋友分享",
+    friendsInvited:"已邀请好友", earnedFromInvites:"邀请收益",
+    withdrawFunds:"提现", minWithdraw:"最低", requiredToWithdraw:"提现所需",
+    amount:"金额", walletAddress:"钱包地址",
+    submitWithdrawal:"提交提现请求",
+    withdrawProcessing:"处理中...",
+    withdrawalHistory:"提现历史",
+    chooseLanguage:"选择语言",
+    watchingAd:"正在观看广告...", dontClose:"请勿关闭 — 完成后获得0.06 TON",
+    mobile:"手机", taskGo:"前往 →", taskDone:"✓ 完成",
+    completed:"已完成", pending:"待处理",
+    copied:"已复制！", withdrawSubmitted:"提现请求已提交！",
+    insufficientBalance:"余额不足！", enterAmount:"请输入金额",
+    enterAddress:"请输入钱包地址",
+    minAmount:"最低提现5.70 TON",
+  },
+  es: {
+    loading:"Cargando...", totalBalance:"SALDO TOTAL", availableToWithdraw:"Disponible para retirar",
+    ads:"Anuncios", tasks:"Tareas", invite:"Invitar", withdraw:"Retirar",
+    watchAndEarn:"Mira y Gana", totalWatched:"Total Visto", totalEarned:"Total Ganado",
+    watchAd:"Ver Anuncio", completeVideo:"Completa el video y gana al instante",
+    readyToEarn:"Listo para ganar", today:"hoy",
+    allAdsDone:"¡Todos los anuncios de hoy terminaron!", comeBackTomorrow:"Vuelve mañana para más TON",
+    completeTasksEarn:"Completa Tareas y Gana",
+    inviteAndEarn:"Invita y Gana",
+    inviteDesc:"Comparte tu enlace y gana 0.40 TON por cada amigo que se una!",
+    yourInviteLink:"TU ENLACE DE INVITACIÓN", copy:"Copiar", shareWithFriends:"Compartir con Amigos",
+    friendsInvited:"Amigos Invitados", earnedFromInvites:"Ganado por Invitaciones",
+    withdrawFunds:"Retirar Fondos", minWithdraw:"Mínimo", requiredToWithdraw:"requerido para retirar",
+    amount:"CANTIDAD", walletAddress:"DIRECCIÓN DE BILLETERA",
+    submitWithdrawal:"Enviar Solicitud de Retiro",
+    withdrawProcessing:"Procesando...",
+    withdrawalHistory:"Historial de Retiros",
+    chooseLanguage:"Elegir Idioma",
+    watchingAd:"Viendo Anuncio...", dontClose:"No cierres — gana 0.06 TON al completar",
+    mobile:"Móvil", taskGo:"Ir →", taskDone:"✓ Hecho",
+    completed:"Completado", pending:"Pendiente",
+    copied:"¡Copiado!", withdrawSubmitted:"¡Solicitud de retiro enviada!",
+    insufficientBalance:"¡Saldo insuficiente!", enterAmount:"Por favor ingresa el monto",
+    enterAddress:"Por favor ingresa la dirección de billetera",
+    minAmount:"El retiro mínimo es 5.70 TON",
+  },
+  fr: {
+    loading:"Chargement...", totalBalance:"SOLDE TOTAL", availableToWithdraw:"Disponible pour retrait",
+    ads:"Annonces", tasks:"Tâches", invite:"Inviter", withdraw:"Retirer",
+    watchAndEarn:"Regardez et Gagnez", totalWatched:"Total Vu", totalEarned:"Total Gagné",
+    watchAd:"Voir une Annonce", completeVideo:"Complétez la vidéo pour gagner instantanément",
+    readyToEarn:"Prêt à gagner", today:"aujourd'hui",
+    allAdsDone:"Toutes les annonces d'aujourd'hui sont terminées!", comeBackTomorrow:"Revenez demain pour plus de TON",
+    completeTasksEarn:"Complétez des Tâches et Gagnez",
+    inviteAndEarn:"Invitez et Gagnez",
+    inviteDesc:"Partagez votre lien et gagnez 0.40 TON par ami qui rejoint!",
+    yourInviteLink:"VOTRE LIEN D'INVITATION", copy:"Copier", shareWithFriends:"Partager avec des Amis",
+    friendsInvited:"Amis Invités", earnedFromInvites:"Gagné des Invitations",
+    withdrawFunds:"Retirer des Fonds", minWithdraw:"Minimum", requiredToWithdraw:"requis pour retirer",
+    amount:"MONTANT", walletAddress:"ADRESSE DU PORTEFEUILLE",
+    submitWithdrawal:"Envoyer la Demande de Retrait",
+    withdrawProcessing:"En traitement...",
+    withdrawalHistory:"Historique des Retraits",
+    chooseLanguage:"Choisir la Langue",
+    watchingAd:"Visionnage de l'annonce...", dontClose:"Ne fermez pas — gagnez 0.06 TON",
+    mobile:"Mobile", taskGo:"Aller →", taskDone:"✓ Fait",
+    completed:"Terminé", pending:"En attente",
+    copied:"Copié!", withdrawSubmitted:"Demande de retrait soumise!",
+    insufficientBalance:"Solde insuffisant!", enterAmount:"Veuillez entrer le montant",
+    enterAddress:"Veuillez entrer l'adresse du portefeuille",
+    minAmount:"Le retrait minimum est 5.70 TON",
+  },
+  de: {
+    loading:"Laden...", totalBalance:"GESAMTGUTHABEN", availableToWithdraw:"Verfügbar zur Abhebung",
+    ads:"Werbung", tasks:"Aufgaben", invite:"Einladen", withdraw:"Abheben",
+    watchAndEarn:"Anschauen und Verdienen", totalWatched:"Gesamt Angesehen", totalEarned:"Gesamt Verdient",
+    watchAd:"Werbung Anschauen", completeVideo:"Video abschließen und sofort verdienen",
+    readyToEarn:"Bereit zum Verdienen", today:"heute",
+    allAdsDone:"Alle Werbungen für heute erledigt!", comeBackTomorrow:"Komm morgen für mehr TON",
+    completeTasksEarn:"Aufgaben erledigen und verdienen",
+    inviteAndEarn:"Einladen und Verdienen",
+    inviteDesc:"Teile deinen Link und verdiene 0.40 TON für jeden Freund!",
+    yourInviteLink:"DEIN EINLADUNGSLINK", copy:"Kopieren", shareWithFriends:"Mit Freunden teilen",
+    friendsInvited:"Eingeladene Freunde", earnedFromInvites:"Durch Einladungen verdient",
+    withdrawFunds:"Geld Abheben", minWithdraw:"Minimum", requiredToWithdraw:"zum Abheben erforderlich",
+    amount:"BETRAG", walletAddress:"WALLET-ADRESSE",
+    submitWithdrawal:"Auszahlungsanfrage senden",
+    withdrawProcessing:"Verarbeitung...",
+    withdrawalHistory:"Auszahlungshistorie",
+    chooseLanguage:"Sprache wählen",
+    watchingAd:"Werbung ansehen...", dontClose:"Nicht schließen — 0.06 TON verdienen",
+    mobile:"Mobil", taskGo:"Gehen →", taskDone:"✓ Fertig",
+    completed:"Abgeschlossen", pending:"Ausstehend",
+    copied:"Kopiert!", withdrawSubmitted:"Auszahlungsanfrage eingereicht!",
+    insufficientBalance:"Unzureichendes Guthaben!", enterAmount:"Bitte Betrag eingeben",
+    enterAddress:"Bitte Wallet-Adresse eingeben",
+    minAmount:"Mindestabhebung ist 5.70 TON",
+  },
+};
+
+const LANGUAGES = [
+  {code:'en', name:'English', flag:'🇬🇧', dir:'ltr'},
+  {code:'fa', name:'فارسی', flag:'🇮🇷', dir:'rtl'},
+  {code:'ar', name:'العربية', flag:'🇸🇦', dir:'rtl'},
+  {code:'ru', name:'Русский', flag:'🇷🇺', dir:'ltr'},
+  {code:'tr', name:'Türkçe', flag:'🇹🇷', dir:'ltr'},
+  {code:'hi', name:'हिन्दी', flag:'🇮🇳', dir:'ltr'},
+  {code:'zh', name:'中文', flag:'🇨🇳', dir:'ltr'},
+  {code:'es', name:'Español', flag:'🇪🇸', dir:'ltr'},
+  {code:'fr', name:'Français', flag:'🇫🇷', dir:'ltr'},
+  {code:'de', name:'Deutsch', flag:'🇩🇪', dir:'ltr'},
+];
+
+// ============================================================
+//  STATE
+// ============================================================
+let state = {
+  lang: 'en',
+  balance: 0,
+  adsWatchedToday: 0,
+  totalWatched: 0,
+  totalEarned: 0,
+  friendsCount: 0,
+  inviteEarned: 0,
+  tasks: {
+    t1:false, t2:false, t3:false, t4:false, t5:false, t6:false
+  },
+  history: [],
+  userId: null,
+  userName: null,
+  userPhoto: null,
+  lastAdDate: null,
+  withdrawTab: 'ton',
+};
+
+const TASKS_DATA = [
+  {id:'t1', icon:'📣', name:'Beast Hack', link:'https://t.me/Beast_Hac1k', reward:0.1},
+  {id:'t2', icon:'💰', name:'Money Plus', link:'https://t.me/Money_Plus12', reward:0.1},
+  {id:'t3', icon:'🌊', name:'TonWave Channel', link:'https://t.me/TonWave22', reward:0.1},
+  {id:'t4', icon:'💎', name:'Free Premium', link:'https://t.me/FREE_PREMUIM2', reward:0.1},
+  {id:'t5', icon:'🤖', name:'Money Plus Bot', link:'https://t.me/Money_Plus12_Bot/moneyplus?startapp=5206091997', reward:0.1},
+  {id:'t6', icon:'⭐', name:'TonWave Bot', link:'', reward:0.1},
+];
+
+// ============================================================
+//  INIT
+// ============================================================
+window.Telegram?.WebApp?.ready();
+window.Telegram?.WebApp?.expand();
+
+function init() {
+  loadState();
+  // Check if new day for ads
+  const today = new Date().toDateString();
+  if(state.lastAdDate !== today) {
+    state.adsWatchedToday = 0;
+    state.lastAdDate = today;
+    saveState();
+  }
+
+  // Telegram user data
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+  if(tgUser) {
+    state.userId = tgUser.id;
+    state.userName = tgUser.first_name + (tgUser.last_name?' '+tgUser.last_name:'');
+    state.userPhoto = tgUser.photo_url || null;
+  } else {
+    state.userId = state.userId || Math.floor(Math.random()*9000000+1000000);
+    state.userName = state.userName || 'TonWave User';
+  }
+  saveState();
+
+  renderUserCard();
+  renderLangModal();
+  renderTasks();
+  renderAds();
+  renderInvite();
+  renderWithdraw();
+  applyLang(state.lang);
+}
+
+// ============================================================
+//  STORAGE
+// ============================================================
+function loadState() {
+  try {
+    const s = localStorage.getItem('tonwave_state');
+    if(s) state = {...state, ...JSON.parse(s)};
+  } catch(e){}
+}
+function saveState() {
+  try { localStorage.setItem('tonwave_state', JSON.stringify(state)); } catch(e){}
+}
+
+// ============================================================
+//  USER CARD
+// ============================================================
+function renderUserCard() {
+  document.getElementById('userName').textContent = state.userName || 'TonWave User';
+  document.getElementById('userId').textContent = 'ID: ' + (state.userId || '—');
+  document.getElementById('balanceAmount').innerHTML = state.balance.toFixed(2) + ' <span>TON</span>';
+  const av = document.getElementById('userAvatar');
+  if(state.userPhoto) {
+    av.innerHTML = `<img src="${state.userPhoto}" alt="">`;
+  } else {
+    const initials = (state.userName||'T').charAt(0).toUpperCase();
+    av.textContent = initials;
+  }
+  document.getElementById('availableBal').textContent = state.balance.toFixed(2);
+}
+
+// ============================================================
+//  LANGUAGE
+// ============================================================
+function t(key) {
+  return (TRANSLATIONS[state.lang]||TRANSLATIONS.en)[key] || (TRANSLATIONS.en)[key] || key;
+}
+function applyLang(lang) {
+  state.lang = lang;
+  const langData = LANGUAGES.find(l=>l.code===lang) || LANGUAGES[0];
+  document.body.setAttribute('data-lang', lang);
+  document.documentElement.setAttribute('dir', langData.dir);
+  document.getElementById('langFlag').textContent = langData.flag;
+  document.getElementById('langCode').textContent = lang.toUpperCase();
+  // Update all data-i18n elements
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  renderTasks();
+  renderAds();
+  renderWithdraw();
+  saveState();
+}
+function openLangModal() {
+  document.getElementById('langModal').classList.add('open');
+}
+function closeLangModal(e) {
+  if(e.target === document.getElementById('langModal'))
+    document.getElementById('langModal').classList.remove('open');
+}
+function renderLangModal() {
+  const grid = document.getElementById('langGrid');
+  grid.innerHTML = LANGUAGES.map(l=>`
+    <div class="lang-item ${l.code===state.lang?'selected':''}" onclick="selectLang('${l.code}')">
+      <span class="lang-flag">${l.flag}</span>
+      <span>${l.name}</span>
+    </div>
+  `).join('');
+}
+function selectLang(code) {
+  state.lang = code;
+  applyLang(code);
+  renderLangModal();
+  document.getElementById('langModal').classList.remove('open');
+}
+
+// ============================================================
+//  TAB SWITCHING
+// ============================================================
+function switchTab(tab) {
+  ['ads','tasks','invite','withdraw'].forEach(t=>{
+    document.getElementById('sec-'+t).classList.remove('active');
+    document.getElementById('nav-'+t).classList.remove('active');
+    document.getElementById('btn'+t.charAt(0).toUpperCase()+t.slice(1)).classList.remove('active');
+  });
+  document.getElementById('sec-'+tab).classList.add('active');
+  document.getElementById('nav-'+tab).classList.add('active');
+  document.getElementById('btn'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
+  if(tab==='withdraw') renderWithdraw();
+}
+
+// ============================================================
+//  ADS
+// ============================================================
+function renderAds() {
+  document.getElementById('totalWatched').textContent = state.totalWatched;
+  document.getElementById('totalEarned').textContent = state.totalEarned.toFixed(2) + ' TON';
+  const remaining = 20 - state.adsWatchedToday;
+  document.getElementById('adCounter').innerHTML = `${state.adsWatchedToday} / 20 ${t('today')}`;
+  document.getElementById('adProgressFill').style.width = (state.adsWatchedToday/20*100)+'%';
+  if(state.adsWatchedToday >= 20) {
+    document.getElementById('adWatchCard').style.display = 'none';
+    document.getElementById('adsDoneMsg').style.display = 'block';
+    document.querySelectorAll('[data-i18n="allAdsDone"]').forEach(el=>el.textContent=t('allAdsDone'));
+    document.querySelectorAll('[data-i18n="comeBackTomorrow"]').forEach(el=>el.textContent=t('comeBackTomorrow'));
+  } else {
+    document.getElementById('adWatchCard').style.display = 'block';
+    document.getElementById('adsDoneMsg').style.display = 'none';
+    document.getElementById('adStatus').textContent = t('readyToEarn');
+  }
+}
+
+let adWatching = false;
+function watchAd() {
+  if(adWatching) return;
+  if(state.adsWatchedToday >= 20) return;
+  adWatching = true;
+  const modal = document.getElementById('adModal');
+  modal.classList.add('open');
+  let sec = 5;
+  document.getElementById('adCountdown').textContent = sec;
+  document.getElementById('adModalFill').style.width = '0%';
+  const iv = setInterval(()=>{
+    sec--;
+    document.getElementById('adCountdown').textContent = sec;
+    document.getElementById('adModalFill').style.width = ((5-sec)/5*100)+'%';
+    if(sec <= 0) {
+      clearInterval(iv);
+      modal.classList.remove('open');
+      adWatching = false;
+      // Credit
+      state.adsWatchedToday++;
+      state.totalWatched++;
+      state.balance = +(state.balance + 0.06).toFixed(2);
+      state.totalEarned = +(state.totalEarned + 0.06).toFixed(2);
+      saveState();
+      renderUserCard();
+      renderAds();
+      showToast('+0.06 TON 🎉');
+    }
+  }, 1000);
+}
+
+// ============================================================
+//  TASKS
+// ============================================================
+function renderTasks() {
+  const list = document.getElementById('tasksList');
+  list.innerHTML = TASKS_DATA.map(task=>`
+    <div class="task-item ${state.tasks[task.id]?'done':''}" id="taskItem_${task.id}">
+      <div class="task-icon">${task.icon}</div>
+      <div class="task-info">
+        <div class="task-name">${task.name}</div>
+        <div class="task-reward">+${task.reward} TON</div>
+      </div>
+      ${state.tasks[task.id]
+        ? `<button class="task-btn done-btn">${t('taskDone')}</button>`
+        : `<button class="task-btn go" onclick="doTask('${task.id}')">${t('taskGo')}</button>`
+      }
+    </div>
+  `).join('');
+}
+
+function doTask(id) {
+  if(state.tasks[id]) return;
+  const task = TASKS_DATA.find(t=>t.id===id);
+  if(!task) return;
+  if(task.link) {
+    window.open(task.link, '_blank');
+  }
+  setTimeout(()=>{
+    state.tasks[id] = true;
+    state.balance = +(state.balance + task.reward).toFixed(2);
+    saveState();
+    renderUserCard();
+    renderTasks();
+    showToast(`+${task.reward} TON 🎉`);
+  }, 1500);
+}
+
+// ============================================================
+//  INVITE
+// ============================================================
+function renderInvite() {
+  const userId = state.userId || 'USER_ID';
+  const link = `https://t.me/TonWave_1Bot?startapp=${userId}`;
+  document.getElementById('inviteLinkText').textContent = link;
+  document.getElementById('friendsCount').textContent = state.friendsCount;
+  document.getElementById('inviteEarned').textContent = state.inviteEarned.toFixed(2) + ' TON';
+}
+function copyInviteLink() {
+  const link = `https://t.me/TonWave_1Bot?startapp=${state.userId}`;
+  navigator.clipboard?.writeText(link).catch(()=>{});
+  showToast(t('copied'));
+}
+function shareInvite() {
+  const link = `https://t.me/TonWave_1Bot?startapp=${state.userId}`;
+  const text = `🌊 Join TonWave and earn TON! ${link}`;
+  if(window.Telegram?.WebApp) {
+    window.Telegram.WebApp.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`);
+  } else {
+    navigator.clipboard?.writeText(text).catch(()=>{});
+    showToast(t('copied'));
+  }
+}
+
+// ============================================================
+//  WITHDRAW
+// ============================================================
+function setWithdrawTab(tab) {
+  state.withdrawTab = tab;
+  document.querySelectorAll('.w-tab').forEach(b=>{
+    b.classList.toggle('active', b.getAttribute('data-tab')===tab);
+  });
+  saveState();
+}
+
+function renderWithdraw() {
+  document.getElementById('availableBal').textContent = state.balance.toFixed(2);
+  renderHistory();
+}
+
+function submitWithdraw() {
+  const amount = parseFloat(document.getElementById('withdrawAmount').value);
+  const address = document.getElementById('withdrawAddress').value.trim();
+  if(!amount || isNaN(amount)) { showToast(t('enterAmount')); return; }
+  if(amount < 5.7) { showToast(t('minAmount')); return; }
+  if(amount > state.balance) { showToast(t('insufficientBalance')); return; }
+  if(!address) { showToast(t('enterAddress')); return; }
+
+  const entry = {
+    amount: amount,
+    currency: state.withdrawTab.toUpperCase(),
+    address: address,
+    date: new Date().toLocaleString(),
+    status: 'pending',
+    id: Date.now(),
+  };
+  state.history.unshift(entry);
+  state.balance = +(state.balance - amount).toFixed(2);
+  saveState();
+  document.getElementById('withdrawAmount').value = '';
+  document.getElementById('withdrawAddress').value = '';
+  renderUserCard();
+  renderWithdraw();
+  showToast(t('withdrawSubmitted'));
+
+  // Show success card
+  const sc = document.getElementById('withdrawSuccess');
+  sc.classList.add('show');
+  document.getElementById('withdrawSuccessDetail').innerHTML = `
+    <b>${amount} ${entry.currency}</b><br>
+    📍 ${address.substring(0,20)}...<br>
+    🕐 ${entry.date}<br>
+    ⏳ ${t('withdrawProcessing')}
+  `;
+  setTimeout(()=>sc.classList.remove('show'), 5000);
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if(!state.history.length) {
+    list.innerHTML = `<div class="empty-history">📭 No withdrawals yet</div>`;
+    return;
+  }
+  list.innerHTML = state.history.map(h=>`
+    <div class="history-item">
+      <div class="history-item-left">
+        <div class="history-amount">${h.amount} <span style="font-size:13px;color:var(--text2)">${h.currency||'TON'}</span></div>
+        <div class="history-date">📅 ${h.date}</div>
+        ${h.address?`<div class="history-address">📍 ${h.address}</div>`:''}
+      </div>
+      <div class="status-badge ${h.status==='completed'?'completed':'pending'}">
+        ${h.status==='completed'?('✅ '+t('completed')):('⏳ '+t('pending'))}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+//  TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ============================================================
+//  ADMIN: window function to approve withdrawal
+//  Usage: approveWithdraw(id) in console
+// ============================================================
+window.approveWithdraw = function(id) {
+  const h = state.history.find(x=>x.id===id);
+  if(h) { h.status='completed'; saveState(); renderWithdraw(); showToast('✅ Approved!'); }
+};
+window.approveAllWithdraws = function() {
+  state.history.forEach(h=>h.status='completed');
+  saveState(); renderWithdraw(); showToast('✅ All Approved!');
+};
+// Credit invite bonus (called when referral joins)
+window.creditReferral = function() {
+  state.friendsCount++;
+  state.balance = +(state.balance + 0.4).toFixed(2);
+  state.inviteEarned = +(state.inviteEarned + 0.4).toFixed(2);
+  saveState(); renderUserCard(); renderInvite(); showToast('+0.40 TON 🎉');
+};
+
+// ============================================================
+//  START
+// ============================================================
+init();
+</script>
+</body>
+</html>
