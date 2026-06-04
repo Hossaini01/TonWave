@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TonWave</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <style>
 :root {
   --bg: #f0f4ff;
@@ -470,10 +471,8 @@ body { padding-bottom:90px; }
   <div class="sec-header"><span class="sec-dot"></span><span data-i18n="withdrawFunds">Withdraw Funds</span></div>
   <div class="withdraw-min-notice">⚠️ <span data-i18n="minWithdrawNote">Minimum 5.70 TON required to withdraw</span></div>
   <div class="withdraw-form">
-    <div class="w-tabs">
-      <button class="w-tab active" data-tab="ton" onclick="setWithdrawTab('ton')">💎 TON</button>
-      <button class="w-tab" data-tab="usdt" onclick="setWithdrawTab('usdt')">💵 USDT</button>
-      <button class="w-tab" data-tab="mobile" onclick="setWithdrawTab('mobile')">📱 <span data-i18n="mobile">Mobile</span></button>
+    <div class="w-tabs" style="justify-content:flex-start">
+      <button class="w-tab active" data-tab="ton" style="max-width:140px">💎 TON</button>
     </div>
     <div class="form-label" data-i18n="amount">AMOUNT</div>
     <input type="number" class="form-input" id="withdrawAmount" placeholder="e.g. 10.00" step="0.01" min="5.7">
@@ -843,6 +842,8 @@ function init(){
   saveS();
   applyLang(S.lang);
   renderAll();
+  // Init AdGram after page is ready
+  initAdGram();
 }
 
 function checkReferral(){
@@ -954,31 +955,73 @@ function renderAds(){
   }
 }
 
-let adWatching=false;
-function watchAd(){
-  if(adWatching||S.adsWatchedToday>=20) return;
-  adWatching=true;
-  const modal=document.getElementById('adModal');
+let adWatching = false;
+let AdController = null;
+
+// Initialize AdGram controller
+async function initAdGram() {
+  try {
+    AdController = await window.Adsgram.init({
+      blockId: "34039",
+      debug: false,
+      debugBannerType: "FullscreenMedia",
+    });
+  } catch(e) {
+    console.warn('AdGram init failed:', e);
+    AdController = null;
+  }
+}
+
+function watchAd() {
+  if (adWatching || S.adsWatchedToday >= 20) return;
+
+  // If AdGram is available, use it
+  if (AdController) {
+    adWatching = true;
+    AdController.show()
+      .then(() => {
+        // Ad watched successfully — credit user
+        adWatching = false;
+        S.adsWatchedToday++;
+        S.totalWatched++;
+        S.balance = +(S.balance + 0.06).toFixed(2);
+        S.totalEarned = +(S.totalEarned + 0.06).toFixed(2);
+        saveS(); renderUserCard(); renderAds();
+        showToast('+0.06 TON 🎉');
+      })
+      .catch((result) => {
+        adWatching = false;
+        // User skipped or error — no reward
+        if (result && result.error) {
+          console.warn('Ad error:', result.description);
+        }
+      });
+    return;
+  }
+
+  // Fallback: simulate ad (when AdGram not loaded)
+  adWatching = true;
+  const modal = document.getElementById('adModal');
   modal.classList.add('open');
-  let sec=5;
-  document.getElementById('adCountdown').textContent=sec;
-  document.getElementById('adModalFill').style.width='0%';
-  const iv=setInterval(()=>{
+  let sec = 5;
+  document.getElementById('adCountdown').textContent = sec;
+  document.getElementById('adModalFill').style.width = '0%';
+  const iv = setInterval(() => {
     sec--;
-    document.getElementById('adCountdown').textContent=sec;
-    document.getElementById('adModalFill').style.width=((5-sec)/5*100)+'%';
-    if(sec<=0){
+    document.getElementById('adCountdown').textContent = sec;
+    document.getElementById('adModalFill').style.width = ((5 - sec) / 5 * 100) + '%';
+    if (sec <= 0) {
       clearInterval(iv);
       modal.classList.remove('open');
-      adWatching=false;
+      adWatching = false;
       S.adsWatchedToday++;
       S.totalWatched++;
-      S.balance=+(S.balance+0.06).toFixed(2);
-      S.totalEarned=+(S.totalEarned+0.06).toFixed(2);
+      S.balance = +(S.balance + 0.06).toFixed(2);
+      S.totalEarned = +(S.totalEarned + 0.06).toFixed(2);
       saveS(); renderUserCard(); renderAds();
       showToast('+0.06 TON 🎉');
     }
-  },1000);
+  }, 1000);
 }
 
 // ====== TASKS ======
