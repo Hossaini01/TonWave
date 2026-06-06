@@ -806,11 +806,22 @@ let S = {
   lastAdDate:null, withdrawTab:'ton',
 };
 
+function getStorageKey(){ return 'tw_' + (S.userId||'guest'); }
 function loadS(){
-  try{ const d=localStorage.getItem('tw2_state'); if(d) S={...S,...JSON.parse(d)}; }catch(e){}
+  try{
+    // First load just to get userId
+    const tmp = localStorage.getItem('tw2_state');
+    if(tmp){ const d=JSON.parse(tmp); S.userId=d.userId||null; S.userName=d.userName||null; S.userPhoto=d.userPhoto||null; S.lang=d.lang||'en'; }
+  }catch(e){}
+}
+function loadUserS(){
+  try{
+    const d=localStorage.getItem(getStorageKey());
+    if(d) S={...S,...JSON.parse(d)};
+  }catch(e){}
 }
 function saveS(){
-  try{ localStorage.setItem('tw2_state',JSON.stringify(S)); }catch(e){}
+  try{ localStorage.setItem(getStorageKey(),JSON.stringify(S)); }catch(e){}
 }
 
 function t(k){ return (TR[S.lang]||TR.en)[k]||(TR.en)[k]||k; }
@@ -820,29 +831,40 @@ window.Telegram?.WebApp?.ready();
 window.Telegram?.WebApp?.expand();
 
 function init(){
-  loadS();
-  // Reset ads if new day
-  const today = new Date().toDateString();
-  if(S.lastAdDate !== today){ S.adsWatchedToday=0; S.lastAdDate=today; saveS(); }
+  loadS(); // load minimal data (lang, userId)
 
-  // Telegram user
+  // Telegram user — get FIRST before loading per-user storage
   const tgU = window.Telegram?.WebApp?.initDataUnsafe?.user;
   if(tgU){
     S.userId = tgU.id;
     S.userName = tgU.first_name + (tgU.last_name?' '+tgU.last_name:'');
     S.userPhoto = tgU.photo_url||null;
   } else {
-    S.userId = S.userId || Math.floor(Math.random()*9000000+1000000);
-    S.userName = S.userName||'TonWave User';
+    // No Telegram context — use stored userId or generate one
+    if(!S.userId) S.userId = Math.floor(Math.random()*9000000+1000000);
+    if(!S.userName) S.userName = 'TonWave User';
   }
 
-  // Check referral from URL
+  // NOW load this specific user's data (balance, tasks, history, etc.)
+  loadUserS();
+
+  // Override name/photo from Telegram (always fresh from Telegram)
+  if(tgU){
+    S.userId = tgU.id;
+    S.userName = tgU.first_name + (tgU.last_name?' '+tgU.last_name:'');
+    S.userPhoto = tgU.photo_url||null;
+  }
+
+  // Reset ads if new day
+  const today = new Date().toDateString();
+  if(S.lastAdDate !== today){ S.adsWatchedToday=0; S.lastAdDate=today; }
+
+  // Check referral
   checkReferral();
 
   saveS();
   applyLang(S.lang);
   renderAll();
-  // Init AdGram after page is ready
   initAdGram();
 }
 
