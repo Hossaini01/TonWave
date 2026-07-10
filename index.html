@@ -1119,28 +1119,47 @@ function shareInvite(){
 //   3. Paste it into REFERRAL_BUCKET below and save/re-upload this file.
 // From then on, every device reads/writes the same shared store, so
 // invites are credited to the correct referrer automatically.
-const REFERRAL_BUCKET = ""; // <-- paste your bucket ID here after first run
+const REFERRAL_BUCKET = "3tveEHL3Fisr93x5n2RuPh";
 const KVDB_BASE = "https://kvdb.io";
 const REFERRAL_SETUP_EMAIL = "hsynyrdah1@gmail.com";
 let referralBucket = REFERRAL_BUCKET;
+
+function showSetupBanner(msg, isError){
+  try{
+    let b = document.getElementById('twSetupBanner');
+    if(!b){
+      b = document.createElement('div');
+      b.id = 'twSetupBanner';
+      b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;padding:14px 16px;font-size:13px;font-family:monospace;word-break:break-all;white-space:pre-wrap;line-height:1.5;box-shadow:0 2px 10px rgba(0,0,0,0.3);';
+      document.body.appendChild(b);
+    }
+    b.style.background = isError ? '#7a0000' : '#0a3d0a';
+    b.style.color = '#ffffff';
+    b.textContent = msg;
+  }catch(e){}
+}
 
 async function ensureReferralBucket(){
   if(referralBucket) return referralBucket;
   try{
     const cached = localStorage.getItem('tw2_referral_bucket');
     if(cached){ referralBucket = cached; return referralBucket; }
-    const res = await fetch(KVDB_BASE + '/?email=' + encodeURIComponent(REFERRAL_SETUP_EMAIL), { method:'POST' });
+    const res = await fetch(KVDB_BASE + '/', {
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body: 'email=' + encodeURIComponent(REFERRAL_SETUP_EMAIL)
+    });
     const id = (await res.text()).trim();
     if(id && res.ok){
       referralBucket = id;
       localStorage.setItem('tw2_referral_bucket', id);
-      console.warn('%c[TonWave] Referral store created. Paste this ID into REFERRAL_BUCKET in the code: ' + id, 'font-size:14px;color:green;font-weight:bold');
-      setTimeout(()=>{ alert('TonWave setup ID (copy this and send to developer):\n\n' + id); }, 800);
+      showSetupBanner('TonWave setup ID (copy and send to developer):\n' + id, false);
+    } else {
+      showSetupBanner('Referral setup response: ' + res.status + ' ' + id, true);
     }
     return referralBucket;
   }catch(e){
-    console.warn('Referral bucket init failed:', e);
-    setTimeout(()=>{ alert('Referral setup could not connect. Please open the app from its real hosted link (not a downloaded local file) and try again.\n\n' + (e && e.message ? e.message : e)); }, 800);
+    showSetupBanner('Referral setup failed: ' + (e && e.message ? e.message : e), true);
     return null;
   }
 }
