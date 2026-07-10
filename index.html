@@ -874,15 +874,16 @@ function checkReferral(){
   try{
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
     if(startParam && startParam !== String(S.userId)){
-      // This user was referred — the referrer gets credit via the shared store
-      // Mark that this user has been referred
-      if(!S.wasReferred){
-        S.wasReferred = true;
+      // This user was referred — the referrer gets credit via the shared store.
+      // Only stop retrying once the push is CONFIRMED successful — earlier
+      // versions of this app marked it done even when the network request
+      // failed, which silently broke referrals. referralPushed fixes that.
+      if(!S.referralPushed){
         S.referredBy = startParam;
         saveS();
-        // Notify the shared referral store so the referrer gets credited
-        // next time they open the app (see pushReferralEvent below).
-        pushReferralEvent(startParam, S.userId);
+        pushReferralEvent(startParam, S.userId).then(ok=>{
+          if(ok){ S.referralPushed = true; saveS(); }
+        });
       }
     }
   }catch(e){}
@@ -1180,12 +1181,13 @@ async function getReferralEvents(){
 
 async function pushReferralEvent(referrerId, refereeId){
   const bucket = await ensureReferralBucket();
-  if(!bucket) return;
+  if(!bucket) return false;
   try{
     const events = await getReferralEvents();
     events.push({ id: refereeId + '_' + Date.now(), referrerId: String(referrerId), refereeId: String(refereeId), ts: Date.now() });
-    await fetch(`${KVDB_BASE}/${bucket}/events`, { method:'PUT', body: JSON.stringify(events) });
-  }catch(e){ console.warn('Referral push failed:', e); }
+    const res = await fetch(`${KVDB_BASE}/${bucket}/events`, { method:'PUT', body: JSON.stringify(events) });
+    return res.ok;
+  }catch(e){ console.warn('Referral push failed:', e); return false; }
 }
 
 async function syncReferralCredits(){
