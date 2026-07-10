@@ -1111,81 +1111,28 @@ function shareInvite(){
   }
 }
 
-// ====== SHARED REFERRAL STORE (no backend account needed) ======
-// One-time setup (do this once, then never touch it again):
-//   1. Leave REFERRAL_BUCKET empty and open the app once from the real
-//      hosted URL (not a local downloaded file — some mobile browsers
-//      block network requests from local files).
-//   2. A popup will show a setup ID. Send that ID to the developer.
-//   3. Paste it into REFERRAL_BUCKET below and save/re-upload this file.
-// From then on, every device reads/writes the same shared store, so
-// invites are credited to the correct referrer automatically.
-const REFERRAL_BUCKET = "3tveEHL3Fisr93x5n2RuPh";
-const KVDB_BASE = "https://kvdb.io";
-const REFERRAL_SETUP_EMAIL = "hsynyrdah1@gmail.com";
-let referralBucket = REFERRAL_BUCKET;
-
-function showSetupBanner(msg, isError){
-  try{
-    let b = document.getElementById('twSetupBanner');
-    if(!b){
-      b = document.createElement('div');
-      b.id = 'twSetupBanner';
-      b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;padding:14px 16px;font-size:13px;font-family:monospace;word-break:break-all;white-space:pre-wrap;line-height:1.5;box-shadow:0 2px 10px rgba(0,0,0,0.3);';
-      document.body.appendChild(b);
-    }
-    b.style.background = isError ? '#7a0000' : '#0a3d0a';
-    b.style.color = '#ffffff';
-    b.textContent = msg;
-  }catch(e){}
-}
-
-async function ensureReferralBucket(){
-  if(referralBucket) return referralBucket;
-  try{
-    const cached = localStorage.getItem('tw2_referral_bucket');
-    if(cached){ referralBucket = cached; return referralBucket; }
-    const res = await fetch(KVDB_BASE + '/', {
-      method:'POST',
-      headers:{'Content-Type':'application/x-www-form-urlencoded'},
-      body: 'email=' + encodeURIComponent(REFERRAL_SETUP_EMAIL)
-    });
-    const id = (await res.text()).trim();
-    if(id && res.ok){
-      referralBucket = id;
-      localStorage.setItem('tw2_referral_bucket', id);
-      showSetupBanner('TonWave setup ID (copy and send to developer):\n' + id, false);
-    } else {
-      showSetupBanner('Referral setup response: ' + res.status + ' ' + id, true);
-    }
-    return referralBucket;
-  }catch(e){
-    showSetupBanner('Referral setup failed: ' + (e && e.message ? e.message : e), true);
-    return null;
-  }
-}
+// ====== SHARED REFERRAL STORE (Firebase Realtime Database) ======
+// Referral events are stored at FIREBASE_DB + "/events.json" as a Firebase
+// list. Every device reads/writes the same database, so invites are
+// credited to the correct referrer automatically, across any device.
+const FIREBASE_DB = "https://tonwave-e4d60-default-rtdb.firebaseio.com";
 
 async function getReferralEvents(){
-  const bucket = await ensureReferralBucket();
-  if(!bucket) return [];
   try{
-    const res = await fetch(`${KVDB_BASE}/${bucket}/events`);
-    if(res.status === 404) return [];
+    const res = await fetch(`${FIREBASE_DB}/events.json`);
     if(!res.ok) return [];
-    const text = await res.text();
-    if(!text) return [];
-    const data = JSON.parse(text);
-    return Array.isArray(data) ? data : [];
+    const data = await res.json();
+    if(!data) return [];
+    return Object.keys(data).map(key => ({ id: key, ...data[key] }));
   }catch(e){ console.warn('Referral fetch failed:', e); return []; }
 }
 
 async function pushReferralEvent(referrerId, refereeId){
-  const bucket = await ensureReferralBucket();
-  if(!bucket) return false;
   try{
-    const events = await getReferralEvents();
-    events.push({ id: refereeId + '_' + Date.now(), referrerId: String(referrerId), refereeId: String(refereeId), ts: Date.now() });
-    const res = await fetch(`${KVDB_BASE}/${bucket}/events`, { method:'PUT', body: JSON.stringify(events) });
+    const res = await fetch(`${FIREBASE_DB}/events.json`, {
+      method:'POST',
+      body: JSON.stringify({ referrerId: String(referrerId), refereeId: String(refereeId), ts: Date.now() })
+    });
     return res.ok;
   }catch(e){ console.warn('Referral push failed:', e); return false; }
 }
