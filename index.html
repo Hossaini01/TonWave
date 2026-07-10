@@ -866,6 +866,7 @@ function init(){
   applyLang(S.lang);
   renderAll();
   initAdGram();
+  syncReferralCredits();
 }
 
 function checkReferral(){
@@ -873,15 +874,15 @@ function checkReferral(){
   try{
     const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
     if(startParam && startParam !== String(S.userId)){
-      // This user was referred — the referrer gets credit via backend
+      // This user was referred — the referrer gets credit via the shared store
       // Mark that this user has been referred
       if(!S.wasReferred){
         S.wasReferred = true;
         S.referredBy = startParam;
         saveS();
-        // In a real app you'd notify the backend here
-        // For demo: we simulate the referrer getting 0.40 TON locally
-        // (in production this is handled server-side)
+        // Notify the shared referral store so the referrer gets credited
+        // next time they open the app (see pushReferralEvent below).
+        pushReferralEvent(startParam, S.userId);
       }
     }
   }catch(e){}
@@ -1106,6 +1107,84 @@ function shareInvite(){
     );
   } else {
     fallbackCopy(link); showToast(t('copied'));
+  }
+}
+
+// ====== SHARED REFERRAL STORE (no backend account needed) ======
+// One-time setup (do this once, then never touch it again):
+//   1. Leave REFERRAL_BUCKET empty and open the app once from the real
+//      hosted URL (not a local downloaded file — some mobile browsers
+//      block network requests from local files).
+//   2. A popup will show a setup ID. Send that ID to the developer.
+//   3. Paste it into REFERRAL_BUCKET below and save/re-upload this file.
+// From then on, every device reads/writes the same shared store, so
+// invites are credited to the correct referrer automatically.
+const REFERRAL_BUCKET = ""; // <-- paste your bucket ID here after first run
+const KVDB_BASE = "https://kvdb.io";
+const REFERRAL_SETUP_EMAIL = "hsynyrdah1@gmail.com";
+let referralBucket = REFERRAL_BUCKET;
+
+async function ensureReferralBucket(){
+  if(referralBucket) return referralBucket;
+  try{
+    const cached = localStorage.getItem('tw2_referral_bucket');
+    if(cached){ referralBucket = cached; return referralBucket; }
+    const res = await fetch(KVDB_BASE + '/?email=' + encodeURIComponent(REFERRAL_SETUP_EMAIL), { method:'POST' });
+    const id = (await res.text()).trim();
+    if(id && res.ok){
+      referralBucket = id;
+      localStorage.setItem('tw2_referral_bucket', id);
+      console.warn('%c[TonWave] Referral store created. Paste this ID into REFERRAL_BUCKET in the code: ' + id, 'font-size:14px;color:green;font-weight:bold');
+      setTimeout(()=>{ alert('TonWave setup ID (copy this and send to developer):\n\n' + id); }, 800);
+    }
+    return referralBucket;
+  }catch(e){
+    console.warn('Referral bucket init failed:', e);
+    setTimeout(()=>{ alert('Referral setup could not connect. Please open the app from its real hosted link (not a downloaded local file) and try again.\n\n' + (e && e.message ? e.message : e)); }, 800);
+    return null;
+  }
+}
+
+async function getReferralEvents(){
+  const bucket = await ensureReferralBucket();
+  if(!bucket) return [];
+  try{
+    const res = await fetch(`${KVDB_BASE}/${bucket}/events`);
+    if(res.status === 404) return [];
+    if(!res.ok) return [];
+    const text = await res.text();
+    if(!text) return [];
+    const data = JSON.parse(text);
+    return Array.isArray(data) ? data : [];
+  }catch(e){ console.warn('Referral fetch failed:', e); return []; }
+}
+
+async function pushReferralEvent(referrerId, refereeId){
+  const bucket = await ensureReferralBucket();
+  if(!bucket) return;
+  try{
+    const events = await getReferralEvents();
+    events.push({ id: refereeId + '_' + Date.now(), referrerId: String(referrerId), refereeId: String(refereeId), ts: Date.now() });
+    await fetch(`${KVDB_BASE}/${bucket}/events`, { method:'PUT', body: JSON.stringify(events) });
+  }catch(e){ console.warn('Referral push failed:', e); }
+}
+
+async function syncReferralCredits(){
+  const events = await getReferralEvents();
+  if(!S.creditedReferralIds) S.creditedReferralIds = [];
+  let credited = false;
+  events.forEach(ev=>{
+    if(ev.referrerId === String(S.userId) && !S.creditedReferralIds.includes(ev.id)){
+      S.friendsCount++;
+      S.balance = +(S.balance + 0.4).toFixed(2);
+      S.inviteEarned = +(S.inviteEarned + 0.4).toFixed(2);
+      S.creditedReferralIds.push(ev.id);
+      credited = true;
+    }
+  });
+  if(credited){
+    saveS(); renderUserCard(); renderInvite();
+    showToast('+0.40 TON 🎉');
   }
 }
 
