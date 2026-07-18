@@ -283,8 +283,31 @@ function renderUsers(){
         <div class="stat-cell"><div class="v">${u.friendsCount||0}</div><div class="k">دعوت</div></div>
         <div class="stat-cell"><div class="v">${u.tasksDone||0}</div><div class="k">تسک</div></div>
       </div>
+      <div class="wd-actions">
+        <button class="wd-btn approve" onclick="editUserBalance('${u.userId}', ${u.balance||0})">✏️ ویرایش موجودی</button>
+      </div>
     </div>
   `).join('');
+}
+async function editUserBalance(userId, currentBalance){
+  const input = prompt('موجودی جدید (TON) برای کاربر ' + userId + ':', currentBalance);
+  if(input === null) return;
+  const newBalance = parseFloat(input);
+  if(isNaN(newBalance) || newBalance < 0){ alert('عدد معتبر وارد کن'); return; }
+  try{
+    await fetch(`${FIREBASE_DB}/users/${userId}.json`, {
+      method:'PATCH',
+      body: JSON.stringify({ balance: newBalance })
+    });
+    // Also record an override marker so the user's own device picks it up
+    // next time they open the app (see applyAdminOverrideIfAny in index.html).
+    await fetch(`${FIREBASE_DB}/users/${userId}/adminOverride.json`, {
+      method:'PUT',
+      body: JSON.stringify({ balance: newBalance, ts: Date.now() })
+    });
+    alert('موجودی با موفقیت آپدیت شد');
+    loadUsers();
+  }catch(e){ alert('خطا در آپدیت موجودی'); }
 }
 function updateTopStats(){
   document.getElementById('statUsers').textContent = usersCache.length;
