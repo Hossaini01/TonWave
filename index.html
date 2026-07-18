@@ -267,6 +267,7 @@ body { padding-bottom:90px; }
 .status-badge { padding:5px 12px; border-radius:8px; font-size:12px; font-weight:700; white-space:nowrap; }
 .status-badge.completed { background:rgba(0,212,170,0.13); color:var(--accent2); }
 .status-badge.pending { background:rgba(245,166,35,0.13); color:var(--gold); }
+.status-badge.rejected { background:rgba(255,77,109,0.13); color:#ff4d6d; }
 .empty-history { text-align:center; padding:30px 0; color:var(--text3); font-size:14px; }
 
 /* LANGUAGE MODAL */
@@ -822,6 +823,35 @@ function loadUserS(){
 }
 function saveS(){
   try{ localStorage.setItem(getStorageKey(),JSON.stringify(S)); }catch(e){}
+  syncUserProfile();
+}
+
+// Mirrors this user's full profile to Firebase so the admin panel can see
+// every user, their balance, tasks, ads watched, invites, etc. Local
+// localStorage remains the source of truth for the app itself — this is
+// purely an additional copy sent to Firebase, so no local data is lost.
+function syncUserProfile(){
+  try{
+    if(!S.userId) return;
+    fetch(`${FIREBASE_DB}/users/${S.userId}.json`, {
+      method:'PUT',
+      body: JSON.stringify({
+        userId: String(S.userId),
+        name: S.userName || 'TonWave User',
+        photo: S.userPhoto || null,
+        lang: S.lang,
+        balance: S.balance,
+        adsWatchedToday: S.adsWatchedToday,
+        totalWatched: S.totalWatched,
+        totalEarned: S.totalEarned,
+        friendsCount: S.friendsCount,
+        inviteEarned: S.inviteEarned,
+        tasks: S.tasks,
+        tasksDone: Object.values(S.tasks||{}).filter(Boolean).length,
+        lastActive: Date.now()
+      })
+    }).catch(()=>{});
+  }catch(e){}
 }
 
 function t(k){ return (TR[S.lang]||TR.en)[k]||(TR.en)[k]||k; }
@@ -867,6 +897,7 @@ function init(){
   renderAll();
   initAdGram();
   syncReferralCredits();
+  syncWithdrawalStatuses();
 }
 
 function checkReferral(){
@@ -960,7 +991,7 @@ function switchTab(tab){
   document.getElementById('nav-'+tab).classList.add('active');
   const b2=document.getElementById('btn'+tab.charAt(0).toUpperCase()+tab.slice(1));
   if(b2) b2.classList.add('active');
-  if(tab==='withdraw') renderWithdraw();
+  if(tab==='withdraw'){ renderWithdraw(); syncWithdrawalStatuses(); }
 }
 
 // ====== ADS ======
@@ -1156,6 +1187,32 @@ async function syncReferralCredits(){
   }
 }
 
+// Pulls admin decisions (approve/reject) on withdrawal requests back down
+// to this user. On rejection, the withdrawn amount is refunded locally.
+async function syncWithdrawalStatuses(){
+  try{
+    const res = await fetch(`${FIREBASE_DB}/withdrawals.json?orderBy="userId"&equalTo="${String(S.userId)}"`);
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data) return;
+    let changed = false;
+    Object.values(data).forEach(w=>{
+      const local = S.history.find(h=>h.id === w.id);
+      if(local && local.status !== w.status){
+        if(w.status === 'rejected'){
+          S.balance = +(S.balance + local.amount).toFixed(2);
+          showToast('Withdrawal rejected, refunded ' + local.amount + ' TON');
+        } else if(w.status === 'completed'){
+          showToast('✅ Withdrawal approved!');
+        }
+        local.status = w.status;
+        changed = true;
+      }
+    });
+    if(changed){ saveS(); renderUserCard(); renderWithdraw(); }
+  }catch(e){ console.warn('Withdrawal status sync failed:', e); }
+}
+
 // ====== WITHDRAW ======
 function setWithdrawTab(tab){
   S.withdrawTab=tab;
@@ -1186,6 +1243,20 @@ function submitWithdraw(){
   S.history.unshift(entry);
   S.balance=+(S.balance-amt).toFixed(2);
   saveS();
+  fetch(`${FIREBASE_DB}/withdrawals/${entry.id}.json`, {
+    method:'PUT',
+    body: JSON.stringify({
+      id: entry.id,
+      userId: String(S.userId),
+      name: S.userName || 'TonWave User',
+      amount: entry.amount,
+      currency: entry.currency,
+      address: entry.address,
+      date: entry.date,
+      status: 'pending',
+      ts: entry.id
+    })
+  }).catch(()=>{});
   document.getElementById('withdrawAmount').value='';
   document.getElementById('withdrawAddress').value='';
   renderUserCard(); renderWithdraw();
@@ -1210,8 +1281,8 @@ function renderHistory(){
         <div class="history-date">📅 ${h.date}</div>
         <div class="history-address">📍 ${h.address}</div>
       </div>
-      <div class="status-badge ${h.status==='completed'?'completed':'pending'}">
-        ${h.status==='completed'?'✅ '+t('completed'):'⏳ '+t('pending')}
+      <div class="status-badge ${h.status}">
+        ${h.status==='completed'?'✅ '+t('completed'):h.status==='rejected'?'❌ Rejected':'⏳ '+t('pending')}
       </div>
     </div>
   `).join('');
@@ -1223,33 +1294,6 @@ function showToast(msg){
   el.textContent=msg; el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'),2400);
 }
-
-// ====== ADMIN FUNCTIONS ======
-// Use in browser console:
-// approveWithdraw(id) - approve specific withdrawal by ID
-// approveAllWithdraws() - approve all pending
-// creditReferral() - simulate a friend joining via your link
-window.approveWithdraw=function(id){
-  const h=S.history.find(x=>x.id===id);
-  if(h){h.status='completed';saveS();renderWithdraw();showToast('✅ Approved!');}
-  else{console.log('ID not found. Available IDs:',S.history.map(x=>x.id));}
-};
-window.approveAllWithdraws=function(){
-  S.history.forEach(h=>{if(h.status==='pending')h.status='completed';});
-  saveS();renderWithdraw();showToast('✅ All Approved!');
-};
-// Simulate a referral joining (for testing)
-window.creditReferral=function(){
-  S.friendsCount++;
-  S.balance=+(S.balance+0.4).toFixed(2);
-  S.inviteEarned=+(S.inviteEarned+0.4).toFixed(2);
-  saveS();renderUserCard();renderInvite();
-  showToast('+0.40 TON 🎉 Friend joined!');
-};
-// Admin: set balance manually
-window.setBalance=function(amt){
-  S.balance=+amt;saveS();renderUserCard();renderWithdraw();
-};
 
 init();
 </script>
