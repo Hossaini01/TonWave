@@ -1191,7 +1191,7 @@ async function syncReferralCredits(){
 // to this user. On rejection, the withdrawn amount is refunded locally.
 async function syncWithdrawalStatuses(){
   try{
-    const res = await fetch(`${FIREBASE_DB}/withdrawals.json?orderBy="userId"&equalTo="${String(S.userId)}"`);
+    const res = await fetch(`${FIREBASE_DB}/withdrawals.json?orderBy="userId"&equalTo="${String(S.userId)}"&_=${Date.now()}`, { cache: 'no-store' });
     if(!res.ok) return;
     const data = await res.json();
     if(!data) return;
