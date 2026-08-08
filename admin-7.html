@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>TonWave — پنل مدیریت</title>
+<title>TonWave — پنل مدیریت (پرسرعت)</title>
 <style>
 :root{
   --accent:#5b7cff; --accent2:#00e6b8; --gold:#ffb648; --danger:#ff5c7c;
@@ -28,8 +28,8 @@ body{
 /* GLASS BASE */
 .glass{
   background:var(--glass);
-  backdrop-filter:blur(22px) saturate(160%);
-  -webkit-backdrop-filter:blur(22px) saturate(160%);
+  backdrop-filter:blur(18px) saturate(160%);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);
   border:1px solid var(--border);
   border-radius:20px;
 }
@@ -63,15 +63,18 @@ body{
 
 /* TABS */
 .tabs{display:flex;gap:8px;padding:14px 16px 0;}
-.tab-btn{flex:1;padding:12px 4px;border-radius:14px;background:var(--glass);border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);text-align:center;backdrop-filter:blur(16px);transition:all .2s;}
+.tab-btn{flex:1;padding:12px 4px;border-radius:14px;background:var(--glass);border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);text-align:center;backdrop-filter:blur(16px);transition:all .2s;position:relative;}
 .tab-btn.active{background:linear-gradient(135deg,var(--accent),#8aa0ff);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(91,124,255,0.35);}
+.tab-badge{position:absolute;top:-6px;left:-4px;background:var(--gold);color:#1a1200;font-size:10px;font-weight:900;min-width:20px;height:20px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 6px;box-shadow:0 4px 10px rgba(255,182,72,0.4);}
+.tab-badge:empty,.tab-badge.zero{display:none;}
 
 .section{display:none;padding:16px;}
-.section.active{display:block;animation:fadeIn .35s ease;}
+.section.active{display:block;animation:fadeIn .25s ease;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 /* CARDS */
-.card{padding:16px;margin-bottom:12px;transition:transform .15s;}
+.card{padding:16px;margin-bottom:12px;transition:transform .15s, opacity .2s, max-height .25s, margin .2s, padding .2s;overflow:hidden;}
+.card.leaving{opacity:0;transform:scale(.96);max-height:0 !important;padding-top:0;padding-bottom:0;margin-bottom:0;border-width:0;}
 .row{display:flex;align-items:center;gap:10px;}
 .grow{flex:1;min-width:0;}
 .avatar-mini{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#8aa0ff);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;overflow:hidden;}
@@ -90,6 +93,8 @@ body{
 .chip{padding:8px 15px;border-radius:20px;background:var(--glass);border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);backdrop-filter:blur(14px);transition:all .2s;}
 .chip.active{background:linear-gradient(135deg,var(--accent),#8aa0ff);color:#fff;border-color:transparent;}
 .sort-select{margin-right:auto;background:var(--glass);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:9px 12px;font-size:12px;font-family:var(--font);backdrop-filter:blur(14px);}
+.search-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:14px;padding:12px 15px;font-size:14px;color:var(--text);font-family:var(--font);margin-bottom:14px;outline:none;}
+.search-input:focus{border-color:var(--accent);}
 
 .bulk-row{display:flex;gap:8px;margin-bottom:16px;}
 .bulk-btn{flex:1;padding:13px;border-radius:14px;border:1px solid var(--border);font-size:13px;font-weight:800;cursor:pointer;font-family:var(--font);backdrop-filter:blur(14px);}
@@ -104,6 +109,8 @@ body{
 .status-badge.pending{background:rgba(255,182,72,0.14);color:var(--gold);border-color:rgba(255,182,72,0.25);}
 .status-badge.completed{background:rgba(0,230,184,0.14);color:var(--accent2);border-color:rgba(0,230,184,0.25);}
 .status-badge.rejected{background:rgba(255,92,124,0.14);color:var(--danger);border-color:rgba(255,92,124,0.25);}
+.addr-copy{cursor:pointer;transition:color .15s;}
+.addr-copy:active{color:var(--accent2);}
 
 /* BROADCAST FORM */
 .form-label{font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block;}
@@ -124,9 +131,20 @@ body{
 
 .preview-note{padding:13px 15px;font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7;}
 .empty-note{text-align:center;padding:50px 0;color:var(--text3);font-size:13px;}
-.loading-note{text-align:center;padding:50px 0;color:var(--text2);font-size:13px;}
-.loading-note::before{content:'';display:block;width:26px;height:26px;margin:0 auto 12px;border-radius:50%;border:2.5px solid rgba(255,255,255,0.15);border-top-color:var(--accent2);animation:spin 0.8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
+
+/* SKELETON LOADING */
+.skel-card{height:110px;border-radius:20px;margin-bottom:12px;background:linear-gradient(90deg,rgba(255,255,255,0.05) 25%,rgba(255,255,255,0.10) 37%,rgba(255,255,255,0.05) 63%);background-size:400% 100%;animation:shimmer 1.3s infinite;border:1px solid var(--border);}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+
+/* MORE BUTTON */
+.more-btn{width:100%;padding:14px;border-radius:16px;background:var(--glass);border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);}
+.more-btn:active{background:var(--glass-strong);}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(16,22,55,0.92);backdrop-filter:blur(16px);border:1px solid var(--border-strong);color:var(--text);padding:12px 22px;border-radius:14px;font-size:13px;font-weight:700;z-index:1000;opacity:0;transition:all .3s cubic-bezier(.2,.9,.3,1.2);pointer-events:none;max-width:90%;text-align:center;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.success{border-color:rgba(0,230,184,0.4);box-shadow:0 8px 30px rgba(0,230,184,0.15);}
+.toast.error{border-color:rgba(255,92,124,0.4);box-shadow:0 8px 30px rgba(255,92,124,0.15);}
 </style>
 </head>
 <body>
@@ -156,22 +174,23 @@ body{
 <!-- TABS -->
 <div class="tabs">
   <button class="tab-btn active" onclick="switchAdminTab('users')" id="tabBtnUsers">👥 کاربران</button>
-  <button class="tab-btn" onclick="switchAdminTab('withdrawals')" id="tabBtnWithdrawals">💸 برداشت‌ها</button>
+  <button class="tab-btn" onclick="switchAdminTab('withdrawals')" id="tabBtnWithdrawals">💸 برداشت‌ها<span class="tab-badge zero" id="tabPendingBadge"></span></button>
   <button class="tab-btn" onclick="switchAdminTab('broadcast')" id="tabBtnBroadcast">📢 ارسال پیام</button>
 </div>
 
 <!-- USERS SECTION -->
 <div class="section active" id="secUsers">
+  <input type="text" class="search-input" id="userSearch" placeholder="🔍 جستجو با نام یا ID کاربر..." oninput="onUserSearch()">
   <div class="controls-row">
-    <select class="sort-select" id="userSort" onchange="renderUsers()">
+    <select class="sort-select" id="userSort" onchange="resetAndRenderUsers()">
       <option value="lastActive">جدیدترین فعالیت</option>
       <option value="balance">بیشترین موجودی</option>
       <option value="friendsCount">بیشترین دعوت</option>
       <option value="totalWatched">بیشترین تبلیغ دیده‌شده</option>
     </select>
-    <button class="chip" onclick="loadUsers()">🔄 بروزرسانی</button>
+    <button class="chip" onclick="forceReloadUsers()">🔄 بروزرسانی</button>
   </div>
-  <div id="usersList"><div class="loading-note">در حال بارگذاری...</div></div>
+  <div id="usersList"></div>
 </div>
 
 <!-- WITHDRAWALS SECTION -->
@@ -181,12 +200,13 @@ body{
     <div class="chip" data-status="completed" onclick="setWdFilter('completed')">تاییدشده</div>
     <div class="chip" data-status="rejected" onclick="setWdFilter('rejected')">ردشده</div>
     <div class="chip" data-status="all" onclick="setWdFilter('all')">همه</div>
+    <button class="chip" onclick="reloadCurrentWd()">🔄</button>
   </div>
   <div class="bulk-row">
-    <button class="bulk-btn approve" onclick="bulkAction('completed')">✅ تایید همه</button>
-    <button class="bulk-btn reject" onclick="bulkAction('rejected')">❌ رد همه</button>
+    <button class="bulk-btn approve" onclick="bulkAction('completed')">✅ تایید همه معلق‌ها</button>
+    <button class="bulk-btn reject" onclick="bulkAction('rejected')">❌ رد همه معلق‌ها</button>
   </div>
-  <div id="withdrawalsList"><div class="loading-note">در حال بارگذاری...</div></div>
+  <div id="withdrawalsList"></div>
 </div>
 
 <!-- BROADCAST SECTION -->
@@ -217,27 +237,64 @@ body{
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
 const FIREBASE_DB = "https://tonwave-e4d60-default-rtdb.firebaseio.com";
 const ADMIN_PASSWORD = "tonwave2026"; // <-- change this to your own password
 
-// ====== GATE ======
+// ================= STATE =================
+let usersCache = [];
+let usersLoaded = false;
+let usersLoading = false;
+let shownUsers = 20;
+const USERS_PAGE = 20;
+
+let withdrawalsCache = [];
+const wdLoaded = { pending:false, completed:false, rejected:false };
+let wdFilter = 'pending';
+let wdBusy = false;
+
+// ================= TOAST =================
+let toastTimer = null;
+function showToast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type||'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className = 'toast'; }, 2200);
+}
+
+// ================= GATE =================
 function checkPass(){
   const val = document.getElementById('gatePass').value;
   if(val === ADMIN_PASSWORD){
     document.getElementById('gate').style.display = 'none';
     sessionStorage.setItem('tw_admin_ok','1');
-    loadUsers();
+    initData();
   } else {
     document.getElementById('gateErr').style.display = 'block';
   }
 }
 if(sessionStorage.getItem('tw_admin_ok') === '1'){
   document.getElementById('gate').style.display = 'none';
+  initData();
 }
 document.getElementById('gatePass').addEventListener('keydown', e=>{ if(e.key==='Enter') checkPass(); });
 
-// ====== TABS ======
+// ⚡ بارگذاری همزمان کاربران و برداشت‌ها بلافاصله بعد از ورود
+function initData(){
+  loadUsers();
+  loadWd('pending');
+  // هر ۳۰ ثانیه، برداشت‌های معلق بی‌صدا (بدون لودینگ) بروز می‌شود
+  setInterval(()=>{
+    if(document.getElementById('secWithdrawals').classList.contains('active') && wdFilter==='pending'){
+      loadWd('pending', true);
+    }
+  }, 30000);
+}
+
+// ================= TABS =================
 function switchAdminTab(tab){
   ['users','withdrawals','broadcast'].forEach(t=>{
     document.getElementById('sec'+t.charAt(0).toUpperCase()+t.slice(1)).classList.remove('active');
@@ -245,33 +302,66 @@ function switchAdminTab(tab){
   });
   document.getElementById('sec'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
   document.getElementById('tabBtn'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active');
-  if(tab==='users') loadUsers();
-  if(tab==='withdrawals') loadWithdrawals();
+  // داده‌ها از قبل در کش هستند — سوییچ تب لحظه‌ای است
+  if(tab==='users'){ if(!usersLoaded) loadUsers(); else renderUsers(); }
+  if(tab==='withdrawals'){ if(!wdLoaded[wdFilter]) loadWd(wdFilter); else renderWithdrawals(); }
 }
 
-// ====== USERS ======
-let usersCache = [];
+function skeletons(n){
+  return Array(n).fill('<div class="skel-card"></div>').join('');
+}
+
+// ================= USERS =================
 async function loadUsers(){
-  document.getElementById('usersList').innerHTML = '<div class="loading-note">در حال بارگذاری...</div>';
+  if(usersLoading) return;
+  usersLoading = true;
+  // اگر کش خالی است اسکلت نشان بده، وگرنه لیست فعلی را نگه دار (بدون پرش صفحه)
+  if(!usersCache.length){
+    document.getElementById('usersList').innerHTML = skeletons(5);
+  }
   try{
     const res = await fetch(`${FIREBASE_DB}/users.json`);
     const data = await res.json();
     usersCache = data ? Object.values(data) : [];
+    usersLoaded = true;
     updateTopStats();
     renderUsers();
   }catch(e){
-    document.getElementById('usersList').innerHTML = '<div class="empty-note">خطا در بارگذاری کاربران</div>';
+    if(!usersCache.length) document.getElementById('usersList').innerHTML = '<div class="empty-note">خطا در بارگذاری کاربران</div>';
+    showToast('خطا در بارگذاری کاربران', 'error');
   }
+  usersLoading = false;
 }
+function forceReloadUsers(){ loadUsers(); showToast('در حال بروزرسانی...'); }
+function onUserSearch(){ shownUsers = USERS_PAGE; renderUsers(); }
+function resetAndRenderUsers(){ shownUsers = USERS_PAGE; renderUsers(); }
+
 function renderUsers(){
   const sortKey = document.getElementById('userSort').value;
-  const sorted = [...usersCache].sort((a,b)=>(b[sortKey]||0)-(a[sortKey]||0));
+  const q = document.getElementById('userSearch').value.trim().toLowerCase();
+  let arr = usersCache;
+  if(q){
+    arr = arr.filter(u =>
+      (u.name||'').toLowerCase().includes(q) ||
+      String(u.userId||'').includes(q)
+    );
+  }
+  const sorted = [...arr].sort((a,b)=>(b[sortKey]||0)-(a[sortKey]||0));
   const list = document.getElementById('usersList');
-  if(!sorted.length){ list.innerHTML = '<div class="empty-note">هنوز کاربری وجود ندارد</div>'; return; }
-  list.innerHTML = sorted.map(u=>`
+  if(!sorted.length){ list.innerHTML = '<div class="empty-note">کاربری یافت نشد</div>'; return; }
+
+  const slice = sorted.slice(0, shownUsers);
+  let html = slice.map(userCard).join('');
+  if(sorted.length > shownUsers){
+    html += `<button class="more-btn" onclick="showMoreUsers()">نمایش ${sorted.length - shownUsers} کاربر دیگر ⬇</button>`;
+  }
+  list.innerHTML = html;
+}
+function userCard(u){
+  return `
     <div class="card glass">
       <div class="row">
-        <div class="avatar-mini">${u.photo?`<img src="${u.photo}">`:(u.name||'T').charAt(0).toUpperCase()}</div>
+        <div class="avatar-mini">${u.photo?`<img src="${u.photo}" loading="lazy" onerror="this.remove()">`:(u.name||'T').charAt(0).toUpperCase()}</div>
         <div class="grow">
           <div class="name">${escapeHtml(u.name||'کاربر')}</div>
           <div class="sub">ID: ${u.userId}</div>
@@ -283,66 +373,78 @@ function renderUsers(){
         <div class="stat-cell"><div class="v">${u.friendsCount||0}</div><div class="k">دعوت</div></div>
         <div class="stat-cell"><div class="v">${u.tasksDone||0}</div><div class="k">تسک</div></div>
       </div>
-      <div class="wd-actions">
-        <button class="wd-btn approve" onclick="editUserBalance('${u.userId}', ${u.balance||0})">✏️ ویرایش موجودی</button>
-      </div>
-    </div>
-  `).join('');
+    </div>`;
 }
-async function editUserBalance(userId, currentBalance){
-  const input = prompt('موجودی جدید (TON) برای کاربر ' + userId + ':', currentBalance);
-  if(input === null) return;
-  const newBalance = parseFloat(input);
-  if(isNaN(newBalance) || newBalance < 0){ alert('عدد معتبر وارد کن'); return; }
-  try{
-    await fetch(`${FIREBASE_DB}/users/${userId}.json`, {
-      method:'PATCH',
-      body: JSON.stringify({ balance: newBalance })
-    });
-    // Also record an override marker so the user's own device picks it up
-    // next time they open the app (see applyAdminOverrideIfAny in index.html).
-    await fetch(`${FIREBASE_DB}/users/${userId}/adminOverride.json`, {
-      method:'PUT',
-      body: JSON.stringify({ balance: newBalance, ts: Date.now() })
-    });
-    alert('موجودی با موفقیت آپدیت شد');
-    loadUsers();
-  }catch(e){ alert('خطا در آپدیت موجودی'); }
-}
+function showMoreUsers(){ shownUsers += USERS_PAGE; renderUsers(); }
+
 function updateTopStats(){
   document.getElementById('statUsers').textContent = usersCache.length;
   const totalBal = usersCache.reduce((s,u)=>s+(u.balance||0),0);
   document.getElementById('statBalance').textContent = totalBal.toFixed(1);
 }
+function updatePendingBadge(){
+  const n = withdrawalsCache.filter(w=>w.status==='pending').length;
+  document.getElementById('statPending').textContent = n;
+  const badge = document.getElementById('tabPendingBadge');
+  badge.textContent = n;
+  badge.classList.toggle('zero', n===0);
+}
 
-// ====== WITHDRAWALS ======
-let withdrawalsCache = [];
-let wdFilter = 'pending';
-async function loadWithdrawals(){
-  document.getElementById('withdrawalsList').innerHTML = '<div class="loading-note">در حال بارگذاری...</div>';
+// ================= WITHDRAWALS =================
+// ⚡ سرور فقط همان وضعیت لازم را می‌فرستد — نه کل تاریخچه را
+async function loadWd(status, silent){
+  if(wdBusy) return;
+  wdBusy = true;
+  if(!silent){
+    document.getElementById('withdrawalsList').innerHTML = skeletons(4);
+  }
   try{
-    const res = await fetch(`${FIREBASE_DB}/withdrawals.json`);
+    let url;
+    if(status === 'all'){
+      url = `${FIREBASE_DB}/withdrawals.json`;
+    } else {
+      url = `${FIREBASE_DB}/withdrawals.json?orderBy="status"&equalTo="${status}"`;
+    }
+    const res = await fetch(url);
     const data = await res.json();
-    withdrawalsCache = data ? Object.keys(data).map(k=>({key:k,...data[k]})) : [];
+    const items = data ? Object.keys(data).map(k=>({key:k,...data[k]})) : [];
+
+    if(status === 'all'){
+      withdrawalsCache = items;
+      wdLoaded.pending = wdLoaded.completed = wdLoaded.rejected = true;
+    } else {
+      // جایگزینی فقط موارد همین وضعیت — بقیه در کش می‌مانند
+      withdrawalsCache = withdrawalsCache.filter(w=>w.status!==status).concat(items);
+      wdLoaded[status] = true;
+    }
     withdrawalsCache.sort((a,b)=>(b.ts||0)-(a.ts||0));
-    const pendingCount = withdrawalsCache.filter(w=>w.status==='pending').length;
-    document.getElementById('statPending').textContent = pendingCount;
+    updatePendingBadge();
     renderWithdrawals();
   }catch(e){
-    document.getElementById('withdrawalsList').innerHTML = '<div class="empty-note">خطا در بارگذاری برداشت‌ها</div>';
+    if(!silent) document.getElementById('withdrawalsList').innerHTML = '<div class="empty-note">خطا در بارگذاری برداشت‌ها</div>';
+    showToast('خطا در بارگذاری برداشت‌ها', 'error');
   }
+  wdBusy = false;
+}
+function reloadCurrentWd(){
+  wdLoaded[wdFilter] = false;
+  if(wdFilter==='all'){ wdLoaded.pending = wdLoaded.completed = wdLoaded.rejected = false; }
+  loadWd(wdFilter);
 }
 function setWdFilter(f){
   wdFilter = f;
-  document.querySelectorAll('#secWithdrawals .chip').forEach(c=>c.classList.toggle('active', c.getAttribute('data-status')===f));
-  renderWithdrawals();
+  document.querySelectorAll('#secWithdrawals .chip[data-status]').forEach(c=>c.classList.toggle('active', c.getAttribute('data-status')===f));
+  const need = (f==='all') ? !(wdLoaded.pending && wdLoaded.completed && wdLoaded.rejected) : !wdLoaded[f];
+  if(need) loadWd(f);
+  else renderWithdrawals();
 }
+
 function renderWithdrawals(){
   const filtered = wdFilter==='all' ? withdrawalsCache : withdrawalsCache.filter(w=>w.status===wdFilter);
   const list = document.getElementById('withdrawalsList');
-  if(!filtered.length){ list.innerHTML = '<div class="empty-note">موردی یافت نشد</div>'; return; }
+  if(!filtered.length){ list.innerHTML = '<div class="empty-note">موردی یافت نشد 🎉</div>'; return; }
   list.innerHTML = filtered.map(w=>`
-    <div class="card glass">
+    <div class="card glass" id="wd-${w.key}">
       <div class="row">
         <div class="grow">
           <div class="name">${escapeHtml(w.name||'کاربر')}</div>
@@ -351,7 +453,7 @@ function renderWithdrawals(){
         <span class="status-badge ${w.status}">${w.status==='pending'?'معلق':w.status==='completed'?'تاییدشده':'ردشده'}</span>
       </div>
       <div class="sub" style="margin-top:10px;font-size:13px;color:var(--text2)">💰 ${w.amount} ${w.currency||'TON'}</div>
-      <div class="sub" style="word-break:break-all;font-family:monospace;margin-top:4px">📍 ${w.address||''}</div>
+      <div class="sub addr-copy" style="word-break:break-all;font-family:monospace;margin-top:4px" onclick="copyText('${w.address||''}')" title="برای کپی کلیک کنید">📋 ${w.address||''}</div>
       ${w.status==='pending' ? `
       <div class="wd-actions">
         <button class="wd-btn approve" onclick="setWdStatus('${w.key}','completed')">✅ تایید</button>
@@ -360,26 +462,84 @@ function renderWithdrawals(){
     </div>
   `).join('');
 }
-async function setWdStatus(key, status){
+
+// ⚡ تایید لحظه‌ای (Optimistic): کارت بلافاصله حذف می‌شود، درخواست در پس‌زمینه می‌رود
+async function setWdStatus(key, newStatus){
+  const w = withdrawalsCache.find(x=>x.key===key);
+  if(!w) return;
+  const oldStatus = w.status;
+
+  // ۱) رابط کاربری فوراً به‌روز می‌شود — بدون هیچ انتظاری
+  w.status = newStatus;
+  const card = document.getElementById('wd-'+key);
+  if(card){
+    card.style.maxHeight = card.offsetHeight + 'px';
+    requestAnimationFrame(()=>{ card.classList.add('leaving'); });
+    setTimeout(()=>{ renderWithdrawals(); }, 260);
+  } else {
+    renderWithdrawals();
+  }
+  updatePendingBadge();
+  showToast(newStatus==='completed' ? '✅ تایید شد' : '❌ رد شد', 'success');
+
+  // ۲) ذخیره در دیتابیس در پس‌زمینه
   try{
     await fetch(`${FIREBASE_DB}/withdrawals/${key}.json`, {
       method:'PATCH',
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status: newStatus })
     });
-    loadWithdrawals();
-  }catch(e){ alert('خطا در ثبت تغییر'); }
-}
-async function bulkAction(status){
-  const targets = withdrawalsCache.filter(w=>w.status==='pending');
-  if(!targets.length){ alert('موردی برای این عملیات وجود ندارد'); return; }
-  if(!confirm(`آیا مطمئنی می‌خوای ${targets.length} مورد را ${status==='completed'?'تایید':'رد'} کنی؟`)) return;
-  for(const w of targets){
-    await fetch(`${FIREBASE_DB}/withdrawals/${w.key}.json`, { method:'PATCH', body: JSON.stringify({status}) });
+  }catch(e){
+    // برگشت به حالت قبل در صورت خطا
+    w.status = oldStatus;
+    renderWithdrawals();
+    updatePendingBadge();
+    showToast('خطا! دوباره تلاش کنید', 'error');
   }
-  loadWithdrawals();
 }
 
-// ====== BROADCAST ======
+// ⚡ تایید/رد همه با یک درخواست واحد (Multi-path PATCH)
+async function bulkAction(status){
+  const targets = withdrawalsCache.filter(w=>w.status==='pending');
+  if(!targets.length){ showToast('مورد معلقی وجود ندارد'); return; }
+  if(!confirm(`آیا مطمئنی می‌خوای ${targets.length} مورد را ${status==='completed'?'تایید':'رد'} کنی؟`)) return;
+
+  // ۱) رابط کاربری فوراً به‌روز می‌شود
+  targets.forEach(w=>{ w.status = status; });
+  renderWithdrawals();
+  updatePendingBadge();
+  showToast(status==='completed' ? `✅ ${targets.length} مورد تایید شد` : `❌ ${targets.length} مورد رد شد`, 'success');
+
+  // ۲) همه تغییرات در یک درخواست واحد به Firebase
+  const updates = {};
+  targets.forEach(w=>{ updates[w.key + '/status'] = status; });
+  try{
+    await fetch(`${FIREBASE_DB}/withdrawals.json`, {
+      method:'PATCH',
+      body: JSON.stringify(updates)
+    });
+  }catch(e){
+    showToast('خطا در اتصال — لیست را بروزرسانی کنید', 'error');
+    loadWd('pending', true);
+  }
+}
+
+// ================= COPY =================
+function copyText(text){
+  if(!text) return;
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(()=>showToast('📋 آدرس کپی شد', 'success'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); showToast('📋 آدرس کپی شد', 'success'); }catch(e){}
+    document.body.removeChild(ta);
+  }
+}
+
+// ================= BROADCAST =================
 let btnRowCount = 0;
 function addBtnRow(){
   btnRowCount++;
@@ -400,8 +560,8 @@ async function sendBroadcast(){
   const text = document.getElementById('bcText').value.trim();
   const photo = document.getElementById('bcPhoto').value.trim();
   const video = document.getElementById('bcVideo').value.trim();
-  if(!token){ alert('توکن ربات را وارد کن'); return; }
-  if(!text && !photo && !video){ alert('حداقل متن، عکس یا ویدیو لازم است'); return; }
+  if(!token){ showToast('توکن ربات را وارد کن', 'error'); return; }
+  if(!text && !photo && !video){ showToast('حداقل متن، عکس یا ویدیو لازم است', 'error'); return; }
 
   const buttons = [];
   document.querySelectorAll('.btn-row-item').forEach(row=>{
@@ -414,7 +574,7 @@ async function sendBroadcast(){
   const reply_markup = buttons.length ? { inline_keyboard: buttons } : undefined;
 
   if(!usersCache.length){ await loadUsers(); }
-  if(!usersCache.length){ alert('هیچ کاربری برای ارسال یافت نشد'); return; }
+  if(!usersCache.length){ showToast('هیچ کاربری برای ارسال یافت نشد', 'error'); return; }
 
   const sendBtn = document.getElementById('sendBtn');
   sendBtn.disabled = true;
@@ -449,7 +609,7 @@ async function sendBroadcast(){
     await new Promise(r=>setTimeout(r, 60));
   }
   sendBtn.disabled = false;
-  alert(`ارسال کامل شد.\nموفق: ${sent}\nناموفق: ${failed}`);
+  showToast(`ارسال کامل شد — موفق: ${sent} | ناموفق: ${failed}`, 'success');
 }
 
 function escapeHtml(str){
