@@ -6,9 +6,6 @@
 <title>TonWave</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
-
-<!-- AdsGalaxy SDK -->
-<script src="https://app.adsgalaxy.online/sdk.js?id=35"></script>
 <style>
 :root {
   --bg: #f0f4ff;
@@ -1038,9 +1035,14 @@ function watchAd() {
     adWatching = true;
     AdController.show()
       .then(() => {
-        // Adsgram watched successfully -> now play AdsGalaxy automatically, then reward
+        // Ad watched successfully — credit user
         adWatching = false;
-        playAdsGalaxyThenReward();
+        S.adsWatchedToday++;
+        S.totalWatched++;
+        S.balance = +(S.balance + 0.06).toFixed(2);
+        S.totalEarned = +(S.totalEarned + 0.06).toFixed(2);
+        saveS(); renderUserCard(); renderAds();
+        showToast('+0.06 TON 🎉');
       })
       .catch((result) => {
         adWatching = false;
@@ -1067,40 +1069,14 @@ function watchAd() {
       clearInterval(iv);
       modal.classList.remove('open');
       adWatching = false;
-      // Simulated Adsgram fallback finished -> now play AdsGalaxy automatically, then reward
-      playAdsGalaxyThenReward();
+      S.adsWatchedToday++;
+      S.totalWatched++;
+      S.balance = +(S.balance + 0.06).toFixed(2);
+      S.totalEarned = +(S.totalEarned + 0.06).toFixed(2);
+      saveS(); renderUserCard(); renderAds();
+      showToast('+0.06 TON 🎉');
     }
   }, 1000);
-}
-
-// ── پس از تکمیل کامل Adsgram: پخش خودکار AdsGalaxy، سپس ثبت پاداش ──────
-// دیدن AdsGalaxy اجباری نیست: چه کاربر تا آخر ببیند (then) چه ببندد/خطا
-// بخورد (catch)، در هر دو حالت پاداش داده می‌شود چون Adsgram کامل دیده شده.
-function playAdsGalaxyThenReward(){
-  if(typeof window.showAdsGalaxy !== 'function'){
-    console.warn('AdsGalaxy SDK not loaded, granting reward directly');
-    grantAdReward();
-    return;
-  }
-  window.showAdsGalaxy()
-    .then((result) => {
-      console.log('AdsGalaxy result:', result);
-      grantAdReward();
-    })
-    .catch((error) => {
-      console.log('AdsGalaxy closed/error (reward still granted):', error?.code, error?.message);
-      grantAdReward();
-    });
-}
-
-// ── ثبت پاداش نهایی (بعد از Adsgram + AdsGalaxy) ──────────────────────
-function grantAdReward(){
-  S.adsWatchedToday++;
-  S.totalWatched++;
-  S.balance = +(S.balance + 0.06).toFixed(2);
-  S.totalEarned = +(S.totalEarned + 0.06).toFixed(2);
-  saveS(); renderUserCard(); renderAds();
-  showToast('+0.06 TON 🎉');
 }
 
 // ====== TASKS ======
