@@ -6,6 +6,7 @@
 <title>TonWave</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+<script src="https://ad.gigapub.tech/script?id=7757"></script>
 <style>
 :root {
   --bg: #f0f4ff;
@@ -1013,6 +1014,37 @@ function renderAds(){
 let adWatching = false;
 let AdController = null;
 
+// Grants the ad reward (used after the mandatory Adsgram ad, once the
+// optional GigaPub ad has finished — watched, skipped, or failed).
+function grantAdReward(){
+  S.adsWatchedToday++;
+  S.totalWatched++;
+  S.balance = +(S.balance + 0.06).toFixed(2);
+  S.totalEarned = +(S.totalEarned + 0.06).toFixed(2);
+  saveS(); renderUserCard(); renderAds();
+  showToast('+0.06 TON 🎉');
+}
+
+// GigaPub: optional ad shown automatically right after the mandatory
+// Adsgram ad. It never blocks or breaks anything — the reward is granted
+// once GigaPub settles, whether the user watched it, skipped it, or it
+// errored/failed to load. Nothing is ever shown to the user or logged.
+function playGigaThenReward(){
+  try{
+    if(window.showGiga && typeof window.showGiga === 'function'){
+      window.showGiga()
+        .then(()=>{ grantAdReward(); })
+        .catch(()=>{ grantAdReward(); });
+    } else {
+      // GigaPub SDK not available — reward anyway, no error shown
+      grantAdReward();
+    }
+  }catch(e){
+    // Any unexpected issue — reward anyway, stay silent
+    grantAdReward();
+  }
+}
+
 // Initialize AdGram controller
 async function initAdGram() {
   try {
@@ -1035,14 +1067,10 @@ function watchAd() {
     adWatching = true;
     AdController.show()
       .then(() => {
-        // Ad watched successfully — credit user
+        // Adsgram (mandatory) watched successfully — now play the optional
+        // GigaPub ad automatically, and grant the reward once it settles.
         adWatching = false;
-        S.adsWatchedToday++;
-        S.totalWatched++;
-        S.balance = +(S.balance + 0.06).toFixed(2);
-        S.totalEarned = +(S.totalEarned + 0.06).toFixed(2);
-        saveS(); renderUserCard(); renderAds();
-        showToast('+0.06 TON 🎉');
+        playGigaThenReward();
       })
       .catch((result) => {
         adWatching = false;
@@ -1069,12 +1097,7 @@ function watchAd() {
       clearInterval(iv);
       modal.classList.remove('open');
       adWatching = false;
-      S.adsWatchedToday++;
-      S.totalWatched++;
-      S.balance = +(S.balance + 0.06).toFixed(2);
-      S.totalEarned = +(S.totalEarned + 0.06).toFixed(2);
-      saveS(); renderUserCard(); renderAds();
-      showToast('+0.06 TON 🎉');
+      playGigaThenReward();
     }
   }, 1000);
 }
